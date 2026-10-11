@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reviewSubmissionSchema } from "@/lib/validation/review";
+import { checkRateLimit } from "@/lib/rate-limiter";
 import { adminDb } from "@/lib/firebase-admin";
 import type { Order } from "@/types";
 
@@ -7,6 +8,14 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "anonymous";
+    const rl = checkRateLimit(`review_${ip}`, { intervalMs: 60000, maxRequests: 5 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } },
+        { status: 429 }
+      );
+    }
     const json = await req.json();
     const result = reviewSubmissionSchema.safeParse(json);
 

@@ -229,3 +229,31 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Contact page active with direct WhatsApp link
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
+
+## Phase 8: Analytics & Hardening
+- **Status**: done
+- **Spec sections**: §10.4, §12.4, §14, §17, §19 (Phase 8)
+- **Files added/changed**:
+  - `next.config.mjs`: configured HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`)
+  - `lib/rate-limiter.ts`: best-effort in-memory rate limiter per §12.4 with sliding reset windows
+  - `app/api/orders/create/route.ts`: rate-limited order placements
+  - `app/api/reviews/create/route.ts`: rate-limited review submissions
+  - `app/api/admin/analytics/route.ts`: Node runtime analytics aggregation endpoint computing total revenue, average order value, daily revenue series, fulfillment status breakdown, and top-selling accessories
+  - `app/[adminPath]/analytics/page.tsx`: administrative analytics dashboard using `recharts` (BarChart for daily sales volume, PieChart for status distribution, top products leaderboard, and 28px Apple KPI tiles)
+  - `app/error.tsx`: global error boundary component with refresh retry action and home navigation
+  - `app/not-found.tsx`: global 404 handler with Apple dark styling and catalog navigation
+  - `app/loading.tsx`: global loading state with minimalist spinner
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all 34 routes compiled successfully (0 errors, 0 warnings)
+  - `curl -I http://localhost:3001/` -> HTTP 200 OK with all security headers verified
+  - `curl -s http://localhost:3001/robots.txt` -> verified proper exclusions, zero admin exposure
+  - `curl -s http://localhost:3001/sitemap.xml` -> verified dynamic catalog and policy indexing
+- **Acceptance checks**:
+  - [x] Analytics page displays revenue by day, orders by status, top products using `recharts`
+  - [x] Security headers active across all responses
+  - [x] In-memory rate limiting throttles abuse on public POST endpoints
+  - [x] Global error boundary (`error.tsx`), 404 page (`not-found.tsx`), and loading skeleton (`loading.tsx`) operational
+  - [x] Mobile responsive (tested from 360px upward) and accessible (`aria-required`, label associations, keyboard navigation)
+  - [x] Server-side authoritative calculations and ISR caching (`revalidate = 60`) active
+- **Spec deviations**: None.
+- **Open items / TODO(verify)**: None.
