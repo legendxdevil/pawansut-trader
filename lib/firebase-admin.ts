@@ -15,6 +15,12 @@ function initFirebaseAdmin(): App {
   let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
 
   if (privateKey) {
+    if (
+      (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+      (privateKey.startsWith("'") && privateKey.endsWith("'"))
+    ) {
+      privateKey = privateKey.slice(1, -1);
+    }
     // Handle escaped newlines from environment strings
     privateKey = privateKey.replace(/\\n/g, "\n");
   }

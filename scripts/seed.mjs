@@ -19,7 +19,10 @@ for (const file of envFiles) {
       const idx = trimmed.indexOf("=");
       if (idx > 0) {
         const key = trimmed.slice(0, idx).trim();
-        const val = trimmed.slice(idx + 1).trim();
+        let val = trimmed.slice(idx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
         if (!process.env[key]) {
           process.env[key] = val;
         }
@@ -33,6 +36,9 @@ const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
 let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
 
 if (privateKey) {
+  if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+    privateKey = privateKey.slice(1, -1);
+  }
   privateKey = privateKey.replace(/\\n/g, "\n");
 }
 
