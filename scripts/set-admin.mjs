@@ -33,8 +33,9 @@ for (const file of envFiles) {
 }
 
 const targetEmail = process.argv[2];
+const targetPassword = process.argv[3];
 if (!targetEmail) {
-  console.error("Usage: node scripts/set-admin.mjs <email>");
+  console.error("Usage: node scripts/set-admin.mjs <email> [password]");
   process.exit(1);
 }
 
@@ -63,16 +64,40 @@ const auth = getAuth(app);
 
 async function setAdmin() {
   try {
-    console.log(`Looking up Firebase user for email: ${targetEmail}...`);
-    const user = await auth.getUserByEmail(targetEmail);
-    console.log(`Found user: ${user.uid} (${user.email})`);
+    let user;
+    try {
+      user = await auth.getUserByEmail(targetEmail);
+      console.log(`Found existing Firebase user: ${user.uid} (${user.email})`);
+      if (targetPassword) {
+        await auth.updateUser(user.uid, { password: targetPassword });
+        console.log("✓ Password updated successfully.");
+      }
+    } catch (lookupErr) {
+      if (lookupErr.code === "auth/user-not-found") {
+        if (!targetPassword) {
+          console.error(`User ${targetEmail} not found in Firebase Auth.`);
+          console.error("To create this user automatically, provide a password:");
+          console.error(`Usage: node scripts/set-admin.mjs ${targetEmail} <password>`);
+          process.exit(1);
+        }
+        console.log(`User ${targetEmail} does not exist. Creating new user...`);
+        user = await auth.createUser({
+          email: targetEmail,
+          password: targetPassword,
+          emailVerified: true,
+        });
+        console.log(`✓ User created successfully with UID: ${user.uid}`);
+      } else {
+        throw lookupErr;
+      }
+    }
 
     await auth.setCustomUserClaims(user.uid, { admin: true });
     console.log(`✓ Successfully set custom claim { admin: true } on user ${user.uid}!`);
-    console.log("Note: The admin user must sign out and sign back in to refresh their ID token claims.");
+    console.log(`Ready! You can now login at /${process.env.ADMIN_PATH || "manage-store-admin"}/login using ${targetEmail}`);
     process.exit(0);
   } catch (err) {
-    console.error("Failed to set admin custom claim:", err.message);
+    console.error("Failed to configure admin user:", err.message);
     process.exit(1);
   }
 }
