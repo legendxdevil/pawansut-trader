@@ -1,5 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Remote image patterns for ImgBB CDN hosting
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.ibb.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "ibb.co",
+        pathname: "/**",
+      },
+    ],
+  },
+
   // Security headers per spec §12.4
   // NOTE: Strict CSP is deliberately avoided to ensure compatibility with Cashfree payment iframe/checkout in Phase 9.
   async headers() {

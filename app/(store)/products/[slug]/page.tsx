@@ -7,6 +7,7 @@ import { getProductBySlug } from "@/lib/data/products";
 import { getApprovedReviews } from "@/lib/data/reviews";
 import { ProductInteractiveSection } from "@/components/store/product-interactive-section";
 import { ProductReviews } from "@/components/store/product-reviews";
+import { ProductGallery } from "@/components/store/product-gallery";
 import { STORE_CONFIG } from "@/lib/store-config";
 
 interface ProductPageProps {
@@ -117,36 +118,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       {/* Product Top Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-        {/* Left: Pale Comparison Card White 28px Image Canvas (§5.4) */}
-        <div className="bg-white rounded-tile p-8 sm:p-12 flex items-center justify-center min-h-[380px] sm:min-h-[480px] relative overflow-hidden border border-steel/20 shadow-none">
-          {product.images && product.images[0] ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              className="max-h-[380px] max-w-full object-contain mix-blend-multiply"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = "none";
-              }}
-            />
-          ) : null}
-
-          {/* Fallback emblem on white */}
-          <div className="text-obsidian/40 flex flex-col items-center justify-center text-center p-4">
-            <span className="text-4xl font-extrabold tracking-tight text-obsidian/80">PT</span>
-            <span className="text-xs uppercase font-semibold text-obsidian/60 tracking-widest mt-1">
-              {product.category.replace("-", " ")}
-            </span>
-          </div>
-
-          {totalStock <= 0 && (
-            <div className="absolute inset-0 bg-obsidian/60 flex items-center justify-center rounded-tile">
-              <span className="bg-error text-white text-sm font-semibold px-4 py-2 rounded-pill">
-                Out of Stock
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Left: Pale Comparison Card White 28px Image Canvas with Thumbnails (§5.4, §7.4) */}
+        <ProductGallery
+          images={product.images || []}
+          productName={product.name}
+          category={product.category}
+          isOutOfStock={totalStock <= 0}
+        />
 
         {/* Right: Info and Interactive Controls */}
         <div className="space-y-6">

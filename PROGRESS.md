@@ -257,3 +257,40 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Server-side authoritative calculations and ISR caching (`revalidate = 60`) active
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
+
+## Phase 5 Refactor: ImgBB API v1 Image Hosting Migration
+- **Status**: done
+- **Spec sections**: §6, §11, §12.3, §17, §18, Phase 5
+- **Files added/changed**:
+  - `app/api/admin/upload-image/route.ts`: Node runtime route handler (`export const runtime = "nodejs"`) validating admin session (`requireAdmin()`), content-type (`multipart/form-data`), file presence, MIME types (`image/jpeg`, `image/png`, `image/webp`), and file size (<= 2 MB); forwards multipart payload via server-side `FormData` to `https://api.imgbb.com/1/upload?key=...`; returns `{ url: data.display_url || data.url, thumbUrl: data.thumb?.url, deleteUrl: data.delete_url }`; masks internal credentials; maps ImgBB failures to `{ error: { code, message } }`.
+  - `components/admin/product-form.tsx`: removed Firebase Storage SDK upload logic; implemented client-side canvas compression (`compressImage`) targeting max 1200px width/height and WebP format (quality 0.85, <= 1 MB); multi-file upload calling `/api/admin/upload-image`; real-time upload progress and error states; reordering controls (`ChevronLeft`/`ChevronRight`), primary "Cover" badge for index 0, and item deletion; fallback manual URL entry.
+  - `components/store/product-gallery.tsx`: interactive catalog gallery supporting multiple product images, primary Apple dark 28px card preview, and thumbnail carousel.
+  - `app/(store)/products/[slug]/page.tsx`: integrated `ProductGallery` component; absolute OG / Twitter image metadata generated with remote host verification.
+  - `next.config.mjs`: configured `images.remotePatterns` for `i.ibb.co` and `ibb.co` CDN domains.
+  - `lib/firebase.ts` & `lib/firebase-admin.ts`: purged Firebase Storage imports.
+  - `storage.rules`: completely removed.
+  - `.env.example`: added server-only `IMGBB_API_KEY=` placeholder (never `NEXT_PUBLIC_`).
+  - `PROJECT_SPEC.md` (§12.3, §17, §18, Phase 5) & `DECISIONS.md`: updated documentation and recorded risk note regarding external hosting and lack of programmatic delete API.
+- **Commands run**:
+  - `npx tsc --noEmit` -> PASS (0 type errors)
+  - `npm run lint` -> PASS (0 warnings, 0 errors)
+  - `npm run build` -> PASS (all 35 routes compiled cleanly, including `/api/admin/upload-image`)
+  - Integration curl tests:
+    - `POST /api/admin/upload-image` (unauthorized) -> HTTP 401 `{"error":{"code":"UNAUTHORIZED","message":"Unauthorized admin access."}}`
+    - `POST /api/admin/upload-image` (application/json) -> HTTP 400 `{"error":{"code":"INVALID_CONTENT_TYPE","message":"Request must be multipart/form-data."}}`
+    - `POST /api/admin/upload-image` (empty multipart) -> HTTP 400 `{"error":{"code":"NO_FILE_PROVIDED","message":"No image file provided in form data."}}`
+    - `POST /api/admin/upload-image` (non-image text file) -> HTTP 400 `{"error":{"code":"INVALID_FILE_TYPE","message":"Invalid file type. Only JPEG, PNG, and WebP images are allowed."}}`
+    - `POST /api/admin/upload-image` (valid image without IMGBB_API_KEY) -> HTTP 500 `{"error":{"code":"IMGBB_NOT_CONFIGURED","message":"Image upload service is not configured. Missing IMGBB_API_KEY environment variable."}}`
+- **Acceptance checks**:
+  - [x] Server-side route handler enforces admin authentication via `requireAdmin()`.
+  - [x] Client-side canvas compression keeps images under 1200px and 1 MB in WebP/JPEG.
+  - [x] Server strictly validates image format (JPEG, PNG, WebP) and size (<= 2 MB).
+  - [x] Upload route forwards multipart payload to ImgBB API v1 without logging or exposing the API key.
+  - [x] Firebase Storage client and server imports completely removed, `storage.rules` deleted.
+  - [x] Next.js `remotePatterns` configured for `i.ibb.co` and `ibb.co`.
+  - [x] Product page and OG metadata correctly support remote `i.ibb.co` image URLs.
+  - [x] Multiple image upload and reordering with cover badge supported in admin product form.
+  - [x] Build, lint, and type check passing with 0 errors.
+- **Open items / TODO(verify)**:
+  - `TODO(verify)`: Live image upload to ImgBB CDN requires owner to supply `IMGBB_API_KEY` in `.env.local` to execute end-to-end live upload against `api.imgbb.com/1/upload`.
+

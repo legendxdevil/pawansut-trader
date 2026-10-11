@@ -352,24 +352,13 @@ service cloud.firestore {
 ```
 Public data (products, announcements, approved reviews, settings) is read **on the server** with the Admin SDK and rendered with ISR (`revalidate = 60`), so no public client rules are needed.
 
-### 12.3 Storage rules
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /products/{allPaths=**} {
-      allow read: if true;
-      allow create, update: if request.auth != null
-        && request.auth.token.admin == true
-        && request.resource.size < 2 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-      allow delete: if request.auth != null && request.auth.token.admin == true;
-    }
-    match /{allPaths=**} { allow read, write: if false; }
-  }
-}
-```
-Admin image upload compresses client-side (max ~1200px, WebP/JPEG) before upload.
+### 12.3 Image Hosting (ImgBB API v1)
+
+Firebase Storage has been replaced with the ImgBB API v1 for product catalog image hosting.
+- **Upload Route**: Server-side route `POST /api/admin/upload-image` (runtime `nodejs`) verifies `requireAdmin()`, validates image file format (JPEG, PNG, WebP) and size (≤ 2 MB after client compression), and forwards via multipart `FormData` to `https://api.imgbb.com/1/upload?key=...`.
+- **Response**: Returns `{ url: data.display_url || data.url, thumbUrl: data.thumb?.url, deleteUrl: data.delete_url }`.
+- **Client Compression**: Admin form compresses images client-side to max ~1200px (WebP, quality 0.85, target ≤ 1 MB) prior to upload, and supports multiple images with cover reordering.
+- **Risk note**: External hosting on ImgBB; no documented programmatic delete API endpoint (only manual `data.delete_url` web link); images remain hosted on ImgBB external infrastructure. Firebase `storage.rules` is removed.
 
 ### 12.4 Other protections
 - Never trust client price, total, discount, delivery charge, or stock.
@@ -435,7 +424,7 @@ types/ index.ts
 content/policies/*.md
 scripts/ set-admin.mjs, seed.mjs
 public/ og-default.png (owner supplies)
-firestore.rules  storage.rules  firestore.indexes.json
+firestore.rules  firestore.indexes.json
 PROGRESS.md  DECISIONS.md  .env.example
 ```
 
@@ -448,7 +437,6 @@ NEXT_PUBLIC_SITE_URL=
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 FIREBASE_ADMIN_PROJECT_ID=
@@ -458,6 +446,7 @@ ADMIN_PATH=                         # secret admin path segment, e.g. manage-xxx
 CASHFREE_APP_ID=
 CASHFREE_SECRET_KEY=
 CASHFREE_ENV=sandbox                # sandbox | production
+IMGBB_API_KEY=                      # server-only API key for ImgBB image hosting
 ```
 
 ---
@@ -468,7 +457,7 @@ Each phase ends with: `npx tsc --noEmit`, `npm run lint`, `npm run build` all pa
 
 **Phase 0 — Verify environment.** Node ≥ 18.17 (prefer 20). Scaffold with `create-next-app@14` (TypeScript, Tailwind, App Router, ESLint, no `src/`). Confirm the installed Next/React/Tailwind majors. *Accept:* dev server starts.
 
-**Phase 1 — Foundation.** Dependencies (§4), Tailwind theme tokens (§5), Inter, global layout, `lib/store-config.ts`, `types/`, Firebase client + admin modules, `firestore.rules`, `storage.rules`, `.env.example`, `.gitignore` check, `PROGRESS.md`, `DECISIONS.md`. *Accept:* build passes; no secret in repo; tokens render on a scratch page.
+**Phase 1 — Foundation.** Dependencies (§4), Tailwind theme tokens (§5), Inter, global layout, `lib/store-config.ts`, `types/`, Firebase client + admin modules, `firestore.rules`, `.env.example`, `.gitignore` check, `PROGRESS.md`, `DECISIONS.md`. *Accept:* build passes; no secret in repo; tokens render on a scratch page.
 
 **Phase 2 — Public catalog.** Server data layer, `scripts/seed.mjs` (Appendix C, flagged as sample data), nav, announcement strip, hero, home, `/products`, category pages, search/filter/sort, product page with variants + warranty block, SEO metadata + JSON-LD for products. *Accept:* seeded products render; variant changes price/stock; invalid slug → 404.
 
@@ -476,7 +465,7 @@ Each phase ends with: `npx tsc --noEmit`, `npm run lint`, `npm run build` all pa
 
 **Phase 4 — Checkout & orders (COD).** Validation schemas, checkout form (§7.7), `/api/orders/create` (§8.2), `/api/coupons/validate`, delivery rule, order-success + WhatsApp template, `/track`, payment abstraction + `isOnlinePaymentEnabled()` (Online disabled). *Accept:* COD order creates doc, decrements stock, increments counters; client-side price tampering rejected; phone with letters impossible; honeypot rejects.
 
-**Phase 5 — Admin foundation + catalog management.** `require-admin`, session API, `set-admin.mjs`, `[adminPath]` guard + login, dashboard shell, products CRUD with image upload + warranty fields, categories, announcements, settings (incl. delivery toggle). *Accept:* `/{ADMIN_PATH}` loads only after admin login; wrong path → 404; non-admin account rejected; edits revalidate public pages.
+**Phase 5 — Admin foundation + catalog management.** `require-admin`, session API, `set-admin.mjs`, `[adminPath]` guard + login, dashboard shell, products CRUD with ImgBB v1 image upload + warranty fields, categories, announcements, settings (incl. delivery toggle). *Accept:* `/{ADMIN_PATH}` loads only after admin login; wrong path → 404; non-admin account rejected; edits revalidate public pages.
 
 **Phase 6 — Admin orders, customers, coupons.** Orders list/detail, status flow with notes, cancel + stock restore, COD paid, warranty card issue + printable sheet + claim lookup, WhatsApp status-message links, invoice print page, CSV export, customers page, coupons CRUD, low-stock list. *Accept:* illegal transitions blocked; card numbers unique and sequential; invoice prints cleanly.
 

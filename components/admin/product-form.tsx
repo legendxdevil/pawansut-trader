@@ -1,9 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Trash2, ArrowLeft, Loader2, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck,
+  Upload,
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+} from "lucide-react";
 import type { Product, Category, ProductVariant, ProductSpec } from "@/types";
 
 interface ProductFormProps {
@@ -12,8 +25,77 @@ interface ProductFormProps {
   adminPath: string;
 }
 
+/**
+ * Client-side canvas image compression helper per §12.3 & spec requirements:
+ * Scales image to maximum ~1200px width/height and compresses to WebP (quality 0.85, target <= 1MB).
+ */
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxDim = 1200;
+      let { width, height } = img;
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const outputType = "image/webp";
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const compressedFile = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, "") + ".webp",
+            { type: outputType, lastModified: Date.now() }
+          );
+          resolve(compressedFile);
+        },
+        outputType,
+        0.85
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 export function ProductForm({ initialProduct, categories, adminPath }: ProductFormProps) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = Boolean(initialProduct);
 
   const [name, setName] = useState(initialProduct?.name || "");
@@ -25,7 +107,20 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
   const [mrp, setMrp] = useState(initialProduct?.mrp ? String(initialProduct.mrp) : "");
   const [shortDescription, setShortDescription] = useState(initialProduct?.shortDescription || "");
   const [description, setDescription] = useState(initialProduct?.description || "");
-  const [imageUrl, setImageUrl] = useState(initialProduct?.images?.[0] || "");
+  
+  // Images array state (supports multiple images + reordering)
+  const [images, setImages] = useState<string[]>(
+    initialProduct?.images && initialProduct.images.length > 0
+      ? initialProduct.images
+      : []
+  );
+  const [manualImageUrl, setManualImageUrl] = useState("");
+
+  // Uploading status
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [tags, setTags] = useState(initialProduct?.tags?.join(", ") || "");
 
   // Variants state
@@ -71,6 +166,77 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           .replace(/^-|-$/g, "")
       );
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadError(null);
+    setUploading(true);
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress(`Compressing ${file.name} (${i + 1}/${files.length})...`);
+        const compressed = await compressImage(file);
+
+        setUploadProgress(`Uploading ${file.name} to ImgBB (${i + 1}/${files.length})...`);
+        const formData = new FormData();
+        formData.append("image", compressed);
+
+        const res = await fetch("/api/admin/upload-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.error?.message || "Failed to upload image to ImgBB");
+        }
+
+        const newUrl = json.url || json.thumbUrl;
+        if (newUrl) {
+          uploadedUrls.push(newUrl);
+        }
+      }
+
+      setImages((prev) => [...prev, ...uploadedUrls]);
+      setUploadProgress("Image(s) uploaded successfully!");
+      setTimeout(() => setUploadProgress(null), 3000);
+    } catch (err) {
+      setUploadError((err as Error).message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleMoveImage = (index: number, direction: "left" | "right") => {
+    setImages((prev) => {
+      const targetIndex = direction === "left" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const copy = [...prev];
+      const temp = copy[index];
+      copy[index] = copy[targetIndex];
+      copy[targetIndex] = temp;
+      return copy;
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddManualImage = () => {
+    const trimmed = manualImageUrl.trim();
+    if (!trimmed) return;
+    setImages((prev) => [...prev, trimmed]);
+    setManualImageUrl("");
   };
 
   const handleAddVariant = () => {
@@ -140,7 +306,7 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
       mrp: mrpNum,
       shortDescription: shortDescription.trim() || undefined,
       description: description.trim(),
-      images: imageUrl.trim() ? [imageUrl.trim()] : [],
+      images: images.filter(Boolean),
       tags: tags
         .split(",")
         .map((t) => t.trim().toLowerCase())
@@ -185,82 +351,68 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
         }, 1000);
       }
     } catch {
-      setError("Network error while saving product.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!initialProduct || !confirm("Are you sure you want to delete this product?")) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/products/${initialProduct.id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        router.push(`/${adminPath}/products`);
-        router.refresh();
-      } else {
-        setError("Failed to delete product.");
-      }
-    } catch {
-      setError("Network error during delete.");
+      setError("Network or server error while saving product.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl pb-16">
+      {/* Top Header */}
       <div className="flex items-center justify-between border-b border-steel/20 pb-4">
         <div className="flex items-center gap-3">
           <Link
             href={`/${adminPath}/products`}
-            className="p-1.5 text-ash hover:text-porcelain rounded-full hover:bg-steel/30"
+            className="p-2 rounded-full hover:bg-carbon text-ash hover:text-porcelain transition-colors"
           >
             <ArrowLeft size={18} />
           </Link>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-porcelain">
-            {isEditing ? `Edit: ${initialProduct?.name}` : "New Product Listing"}
-          </h1>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-porcelain">
+              {isEditing ? `Edit Product: ${initialProduct?.name}` : "Create New Product"}
+            </h1>
+            <p className="text-xs text-ash">
+              Manage product details, multiple images, stock variants, and physical warranty.
+            </p>
+          </div>
         </div>
 
-        {isEditing && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={loading}
-            className="text-error hover:bg-error/15 text-xs font-semibold px-3 py-1.5 rounded-pill flex items-center gap-1 transition-colors"
-          >
-            <Trash2 size={14} /> Delete
-          </button>
-        )}
+        <button
+          type="submit"
+          disabled={loading || uploading}
+          className="bg-apple-blue hover:bg-apple-blue/90 disabled:opacity-50 text-white font-medium text-xs px-6 py-2.5 rounded-pill transition-transform active:scale-95 flex items-center gap-2"
+        >
+          {loading && <Loader2 size={14} className="animate-spin" />}
+          {isEditing ? "Save Changes" : "Publish Product"}
+        </button>
       </div>
 
       {error && (
-        <div className="bg-error/15 border border-error/40 text-error text-xs p-4 rounded-tile flex items-center gap-2">
-          <AlertCircle size={16} className="flex-shrink-0" />
+        <div className="bg-error/10 border border-error/30 text-error rounded-tile p-4 text-xs flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="bg-success/15 border border-success/40 text-success text-xs p-4 rounded-tile flex items-center gap-2">
-          <CheckCircle2 size={16} className="flex-shrink-0" />
-          <span>Product saved successfully! Redirecting...</span>
+        <div className="bg-success/10 border border-success/30 text-success rounded-tile p-4 text-xs flex items-center gap-2">
+          <CheckCircle2 size={16} className="shrink-0" />
+          <span>Product saved successfully. Redirecting to catalog...</span>
         </div>
       )}
 
-      {/* Main Details Card */}
-      <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-porcelain border-b border-steel/20 pb-2">
-          General Information
+      {/* SECTION 1: Basic Information */}
+      <div className="bg-carbon rounded-tile border border-steel/20 p-6 space-y-4">
+        <h2 className="text-sm font-semibold tracking-tight text-porcelain border-b border-steel/20 pb-2">
+          Basic Information
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-xs font-medium text-porcelain">Product Name *</label>
+            <label className="text-xs font-medium text-porcelain">
+              Product Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               placeholder="e.g. 65W GaN Dual Port Charger"
@@ -272,7 +424,9 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-porcelain">Slug (URL identifier) *</label>
+            <label className="text-xs font-medium text-porcelain">
+              Slug (URL identifier) <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               placeholder="65w-gan-dual-port-charger"
@@ -284,7 +438,9 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-porcelain">Category *</label>
+            <label className="text-xs font-medium text-porcelain">
+              Category <span className="text-red-500">*</span>
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -300,7 +456,9 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-porcelain">Selling Price (₹) *</label>
+            <label className="text-xs font-medium text-porcelain">
+              Selling Price (₹) <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
               min={1}
@@ -312,7 +470,9 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-porcelain">MRP (₹) *</label>
+            <label className="text-xs font-medium text-porcelain">
+              MRP (₹) <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
               min={1}
@@ -324,21 +484,10 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-xs font-medium text-ash">Image URL or Storage Path</label>
-            <input
-              type="text"
-              placeholder="/sample/charger-30w.png or Firebase Storage URL"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm"
-            />
-          </div>
-
-          <div className="space-y-1.5 sm:col-span-2">
             <label className="text-xs font-medium text-ash">Short Description</label>
             <input
               type="text"
-              placeholder="High speed PD fast charging with thermal protection"
+              placeholder="One-line summary for cards and search results"
               value={shortDescription}
               onChange={(e) => setShortDescription(e.target.value)}
               className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm"
@@ -346,21 +495,24 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-xs font-medium text-porcelain">Full Description *</label>
+            <label className="text-xs font-medium text-porcelain">
+              Full Product Overview / Description <span className="text-red-500">*</span>
+            </label>
             <textarea
               rows={4}
+              placeholder="Detailed product specifications, compatibility, and features..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-4 rounded-tile border border-slate focus:border-apple-blue text-sm resize-none"
+              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-4 rounded-tile border border-slate focus:border-apple-blue text-sm"
             />
           </div>
 
           <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-xs font-medium text-ash">Tags (comma separated)</label>
+            <label className="text-xs font-medium text-ash">Search Tags (comma-separated)</label>
             <input
               type="text"
-              placeholder="fast charging, gan, type-c"
+              placeholder="fast charger, gan, type-c, pd, 65w"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm"
@@ -369,103 +521,266 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
         </div>
       </div>
 
-      {/* Variants Manager (§7.4) */}
-      <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-4">
+      {/* SECTION 2: Product Images (ImgBB API v1 Integration) */}
+      <div className="bg-carbon rounded-tile border border-steel/20 p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-steel/20 pb-2">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight text-porcelain flex items-center gap-2">
+              <ImageIcon size={16} className="text-apple-blue" />
+              Product Images ({images.length})
+            </h2>
+            <p className="text-[11px] text-ash">
+              Uploaded to ImgBB with client-side compression (max 1200px, WebP, $\le$ 1MB). First image serves as primary cover.
+            </p>
+          </div>
+
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors shrink-0 disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Upload size={14} />
+            )}
+            Upload from Device
+          </button>
+        </div>
+
+        {/* Upload Status / Progress Banner */}
+        {uploadProgress && (
+          <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin shrink-0" />
+            <span>{uploadProgress}</span>
+          </div>
+        )}
+
+        {uploadError && (
+          <div className="p-3 rounded-xl bg-red-900/20 border border-red-800/40 text-xs text-red-300 flex items-center gap-2">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>{uploadError}</span>
+          </div>
+        )}
+
+        {/* Uploaded Images List with Reordering */}
+        {images.length === 0 ? (
+          <div className="p-8 text-center bg-[rgba(255,255,255,0.02)] rounded-tile border border-dashed border-slate text-ash text-xs space-y-1">
+            <p>No product images added yet.</p>
+            <p className="text-[11px] text-neutral-500">
+              Click &quot;Upload from Device&quot; to upload compressed product shots to ImgBB, or paste an image URL below.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+            {images.map((imgUrl, idx) => (
+              <div
+                key={`${imgUrl}-${idx}`}
+                className="group relative rounded-tile bg-black/40 border border-steel/30 p-2 flex flex-col justify-between space-y-2 overflow-hidden"
+              >
+                {/* Image Preview Canvas */}
+                <div className="aspect-square w-full rounded-xl bg-white/5 flex items-center justify-center overflow-hidden relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imgUrl}
+                    alt={`Product image ${idx + 1}`}
+                    className="object-contain max-h-full max-w-full"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
+                  {idx === 0 && (
+                    <span className="absolute top-1.5 left-1.5 bg-apple-blue text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                      <Star size={10} className="fill-white" />
+                      Cover
+                    </span>
+                  )}
+                </div>
+
+                {/* Controls: Reorder Left/Right and Delete */}
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveImage(idx, "left")}
+                      title="Move left (higher priority)"
+                      className="p-1 rounded-lg bg-carbon hover:bg-neutral-800 disabled:opacity-30 text-ash hover:text-porcelain"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === images.length - 1}
+                      onClick={() => handleMoveImage(idx, "right")}
+                      title="Move right"
+                      className="p-1 rounded-lg bg-carbon hover:bg-neutral-800 disabled:opacity-30 text-ash hover:text-porcelain"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    title="Remove image"
+                    className="p-1 rounded-lg bg-carbon hover:bg-red-950/40 text-ash hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Manual Image URL Input fallback */}
+        <div className="pt-2 flex items-center gap-2">
+          <input
+            type="url"
+            placeholder="Or paste direct image URL (e.g. https://i.ibb.co/... or /sample/...)"
+            value={manualImageUrl}
+            onChange={(e) => setManualImageUrl(e.target.value)}
+            className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs font-mono"
+          />
+          <button
+            type="button"
+            onClick={handleAddManualImage}
+            className="px-4 py-2 rounded-pill bg-carbon hover:bg-neutral-800 text-porcelain text-xs font-medium border border-steel/30 shrink-0"
+          >
+            Add URL
+          </button>
+        </div>
+      </div>
+
+      {/* SECTION 3: Inventory Variants */}
+      <div className="bg-carbon rounded-tile border border-steel/20 p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-steel/20 pb-2">
-          <h2 className="text-sm font-semibold text-porcelain">Inventory Variants</h2>
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight text-porcelain">
+              Variants &amp; Inventory Stock
+            </h2>
+            <p className="text-[11px] text-ash">
+              Define product options (e.g., Color, Length, Storage) and live stock counts.
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleAddVariant}
-            className="text-xs text-electric-link hover:underline flex items-center gap-1 font-medium"
+            className="text-apple-blue hover:text-apple-blue/80 text-xs font-medium flex items-center gap-1"
           >
             <Plus size={14} /> Add Variant
           </button>
         </div>
 
         <div className="space-y-3">
-          {variants.map((v, i) => (
+          {variants.map((v, idx) => (
             <div
-              key={v.id || i}
-              className="bg-graphite/60 border border-steel/30 rounded-tile p-3 flex flex-wrap items-center gap-3"
+              key={v.id || idx}
+              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-[rgba(255,255,255,0.02)] p-3 rounded-tile border border-slate"
             >
-              <div className="flex-1 min-w-[140px] space-y-1">
-                <span className="text-[10px] text-ash uppercase font-semibold">Variant Label</span>
+              <div className="sm:col-span-5 space-y-1">
+                <label className="text-[10px] text-ash uppercase tracking-wider">
+                  Option Label *
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. 1 Meter / Black"
+                  placeholder="e.g. 1 Meter - Black"
                   value={v.label}
-                  onChange={(e) => handleUpdateVariant(i, "label", e.target.value)}
+                  onChange={(e) => handleUpdateVariant(idx, "label", e.target.value)}
                   required
                   className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
                 />
               </div>
 
-              <div className="w-24 space-y-1">
-                <span className="text-[10px] text-ash uppercase font-semibold">Stock Qty</span>
+              <div className="sm:col-span-3 space-y-1">
+                <label className="text-[10px] text-ash uppercase tracking-wider">
+                  Stock Units *
+                </label>
                 <input
                   type="number"
                   min={0}
+                  placeholder="10"
                   value={v.stock}
-                  onChange={(e) => handleUpdateVariant(i, "stock", Number(e.target.value))}
+                  onChange={(e) => handleUpdateVariant(idx, "stock", Number(e.target.value))}
                   required
                   className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
                 />
               </div>
 
-              <div className="w-28 space-y-1">
-                <span className="text-[10px] text-ash uppercase font-semibold">Price Override</span>
+              <div className="sm:col-span-3 space-y-1">
+                <label className="text-[10px] text-ash uppercase tracking-wider">
+                  Price Override (Optional ₹)
+                </label>
                 <input
                   type="number"
-                  min={1}
-                  placeholder="Optional"
+                  min={0}
+                  placeholder="Leave empty for base price"
                   value={v.priceOverride || ""}
-                  onChange={(e) =>
-                    handleUpdateVariant(
-                      i,
-                      "priceOverride",
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
+                  onChange={(e) => handleUpdateVariant(idx, "priceOverride", e.target.value)}
                   className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
                 />
               </div>
 
-              {variants.length > 1 && (
+              <div className="sm:col-span-1 flex justify-end pt-4 sm:pt-0">
                 <button
                   type="button"
-                  onClick={() => handleRemoveVariant(i)}
-                  className="text-ash hover:text-error p-1.5 mt-4"
+                  disabled={variants.length <= 1}
+                  onClick={() => handleRemoveVariant(idx)}
+                  className="text-ash hover:text-error disabled:opacity-30 p-1.5 rounded-full transition-colors"
+                  title="Remove Variant"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
-              )}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Warranty Configuration (§16) */}
-      <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-4">
+      {/* SECTION 4: Physical Warranty (§16) */}
+      <div className="bg-carbon rounded-tile border border-steel/20 p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-steel/20 pb-2">
           <div className="flex items-center gap-2">
-            <ShieldCheck size={18} className="text-optical-yellow" />
-            <h2 className="text-sm font-semibold text-porcelain">Warranty Protection</h2>
+            <ShieldCheck size={18} className="text-apple-blue" />
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-porcelain">
+                Physical Warranty Configuration (§16)
+              </h2>
+              <p className="text-[11px] text-ash">
+                Warranty products require hand-over of a physical serialized warranty card (e.g., PT-W-0001).
+              </p>
+            </div>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-porcelain select-none">
+
+          <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={warrantyEnabled}
               onChange={(e) => setWarrantyEnabled(e.target.checked)}
-              className="w-4 h-4 rounded text-apple-blue bg-graphite border-steel"
+              className="sr-only peer"
             />
-            <span className="font-semibold">Enable Warranty</span>
+            <div className="w-11 h-6 bg-slate peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-apple-blue"></div>
           </label>
         </div>
 
         {warrantyEnabled && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-porcelain">Warranty Duration (Months)</label>
+              <label className="text-xs font-medium text-porcelain">
+                Warranty Period (Months) *
+              </label>
               <input
                 type="number"
                 min={1}
@@ -473,7 +788,7 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
                 value={warrantyMonths}
                 onChange={(e) => setWarrantyMonths(e.target.value)}
                 required={warrantyEnabled}
-                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-sm"
+                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm"
               />
             </div>
 
@@ -481,106 +796,142 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
               <label className="text-xs font-medium text-ash">Warranty Terms / Note</label>
               <input
                 type="text"
-                placeholder="Covers manufacturing defects; physical card mandatory"
+                placeholder="e.g. Covers capacitor and charging faults. Physical card mandatory."
                 value={warrantyNote}
                 onChange={(e) => setWarrantyNote(e.target.value)}
-                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-sm"
+                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm"
               />
             </div>
           </div>
         )}
       </div>
 
-      {/* Technical Specifications */}
-      <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-4">
+      {/* SECTION 5: Technical Specifications Table */}
+      <div className="bg-carbon rounded-tile border border-steel/20 p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-steel/20 pb-2">
-          <h2 className="text-sm font-semibold text-porcelain">Technical Specifications</h2>
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight text-porcelain">
+              Technical Specifications Table
+            </h2>
+            <p className="text-[11px] text-ash">
+              Key-value pairs rendered in the technical specs table on the product details page.
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleAddSpec}
-            className="text-xs text-electric-link hover:underline flex items-center gap-1 font-medium"
+            className="text-apple-blue hover:text-apple-blue/80 text-xs font-medium flex items-center gap-1"
           >
-            <Plus size={14} /> Add Spec Row
+            <Plus size={14} /> Add Spec
           </button>
         </div>
 
-        <div className="space-y-2">
-          {specs.map((s, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <input
-                type="text"
-                placeholder="Spec Label (e.g. Wattage)"
-                value={s.label}
-                onChange={(e) => handleUpdateSpec(i, "label", e.target.value)}
-                className="w-1/3 bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
-              />
-              <input
-                type="text"
-                placeholder="Value (e.g. 65W Max)"
-                value={s.value}
-                onChange={(e) => handleUpdateSpec(i, "value", e.target.value)}
-                className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
-              />
-              <button
-                type="button"
-                onClick={() => handleRemoveSpec(i)}
-                className="text-ash hover:text-error p-1"
-              >
-                <Trash2 size={14} />
-              </button>
+        <div className="space-y-3">
+          {specs.map((s, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-[rgba(255,255,255,0.02)] p-3 rounded-tile border border-slate"
+            >
+              <div className="sm:col-span-5 space-y-1">
+                <input
+                  type="text"
+                  placeholder="Label (e.g. Output Wattage)"
+                  value={s.label}
+                  onChange={(e) => handleUpdateSpec(idx, "label", e.target.value)}
+                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
+                />
+              </div>
+
+              <div className="sm:col-span-6 space-y-1">
+                <input
+                  type="text"
+                  placeholder="Value (e.g. 65W Max USB-C PD 3.0)"
+                  value={s.value}
+                  onChange={(e) => handleUpdateSpec(idx, "value", e.target.value)}
+                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-1.5 rounded-pill border border-slate text-xs"
+                />
+              </div>
+
+              <div className="sm:col-span-1 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSpec(idx)}
+                  className="text-ash hover:text-error p-1.5 rounded-full transition-colors"
+                  title="Remove Spec"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Visibility Flags */}
-      <div className="bg-carbon rounded-tile border border-steel/30 p-6 flex flex-wrap gap-6 text-xs">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => setIsActive(e.target.checked)}
-            className="w-4 h-4 rounded text-apple-blue bg-graphite border-steel"
-          />
-          <span className="font-semibold text-porcelain">Active (Visible in Catalog)</span>
-        </label>
+      {/* SECTION 6: Visibility & Badges */}
+      <div className="bg-carbon rounded-tile border border-steel/20 p-6 space-y-4">
+        <h2 className="text-sm font-semibold tracking-tight text-porcelain border-b border-steel/20 pb-2">
+          Visibility &amp; Promotional Badges
+        </h2>
 
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={isFeatured}
-            onChange={(e) => setIsFeatured(e.target.checked)}
-            className="w-4 h-4 rounded text-apple-blue bg-graphite border-steel"
-          />
-          <span className="font-semibold text-porcelain">Featured Product (Home Spotlight)</span>
-        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <label className="flex items-center gap-3 p-3 rounded-tile bg-[rgba(255,255,255,0.02)] border border-slate cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="w-4 h-4 rounded text-apple-blue bg-carbon border-slate"
+            />
+            <div>
+              <p className="text-xs font-medium text-porcelain">Active in Catalog</p>
+              <p className="text-[10px] text-ash">Visible on public store pages</p>
+            </div>
+          </label>
 
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={isNew}
-            onChange={(e) => setIsNew(e.target.checked)}
-            className="w-4 h-4 rounded text-apple-blue bg-graphite border-steel"
-          />
-          <span className="font-semibold text-copper-new">New Arrival Badge</span>
-        </label>
+          <label className="flex items-center gap-3 p-3 rounded-tile bg-[rgba(255,255,255,0.02)] border border-slate cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="w-4 h-4 rounded text-apple-blue bg-carbon border-slate"
+            />
+            <div>
+              <p className="text-xs font-medium text-porcelain">Featured Badge</p>
+              <p className="text-[10px] text-ash">Highlighted in home showcase</p>
+            </div>
+          </label>
+
+          <label className="flex items-center gap-3 p-3 rounded-tile bg-[rgba(255,255,255,0.02)] border border-slate cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isNew}
+              onChange={(e) => setIsNew(e.target.checked)}
+              className="w-4 h-4 rounded text-apple-blue bg-carbon border-slate"
+            />
+            <div>
+              <p className="text-xs font-medium text-porcelain">New Arrival Badge</p>
+              <p className="text-[10px] text-ash">Displays &quot;New&quot; indicator</p>
+            </div>
+          </label>
+        </div>
       </div>
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-sm py-3.5 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-      >
-        {loading ? (
-          <>
-            <Loader2 size={18} className="animate-spin" />
-            <span>Saving Product & Revalidating...</span>
-          </>
-        ) : (
-          <span>{isEditing ? "Save Changes" : "Create Product Listing"}</span>
-        )}
-      </button>
+      {/* Bottom Action Bar */}
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-steel/20">
+        <Link
+          href={`/${adminPath}/products`}
+          className="px-6 py-2.5 rounded-pill text-xs font-medium text-ash hover:text-porcelain transition-colors"
+        >
+          Cancel
+        </Link>
+        <button
+          type="submit"
+          disabled={loading || uploading}
+          className="bg-apple-blue hover:bg-apple-blue/90 disabled:opacity-50 text-white font-medium text-xs px-8 py-2.5 rounded-pill transition-transform active:scale-95 flex items-center gap-2"
+        >
+          {loading && <Loader2 size={14} className="animate-spin" />}
+          {isEditing ? "Save Changes" : "Publish Product"}
+        </button>
+      </div>
     </form>
   );
 }
