@@ -194,26 +194,26 @@ export default function AdminReviewsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 self-end sm:self-center">
+                  <div className="flex items-center gap-2 self-start sm:self-center">
                     <button
                       onClick={() => handleToggleApproval(review.id, review.approved)}
                       disabled={isActing}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[44px] ${
                         review.approved
                           ? "bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"
                           : "bg-emerald-600 text-white hover:bg-emerald-500"
                       }`}
                     >
                       {isActing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : review.approved ? (
                         <>
-                          <XCircle className="w-3.5 h-3.5" />
+                          <XCircle className="w-4 h-4" />
                           Unpublish
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="w-3.5 h-3.5" />
+                          <CheckCircle className="w-4 h-4" />
                           Approve
                         </>
                       )}
@@ -222,7 +222,7 @@ export default function AdminReviewsPage() {
                       onClick={() => handleDelete(review.id)}
                       disabled={isActing}
                       title="Delete review"
-                      className="p-1.5 rounded-xl text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-colors"
+                      className="p-2.5 rounded-xl text-neutral-500 hover:text-red-400 hover:bg-neutral-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

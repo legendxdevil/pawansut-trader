@@ -195,26 +195,27 @@ export default function AdminAnalyticsPage() {
       {/* Charts Section: Revenue by Day & Orders by Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue By Day Bar Chart (2 cols) */}
-        <div className="lg:col-span-2 p-6 sm:p-8 rounded-[28px] bg-neutral-900/80 border border-neutral-800 space-y-6">
+        <div className="lg:col-span-2 p-4 sm:p-8 rounded-tile sm:rounded-[28px] bg-neutral-900/80 border border-neutral-800 space-y-4 sm:space-y-6">
           <div>
-            <h2 className="text-lg font-bold text-white tracking-tight">Revenue by Day</h2>
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Revenue by Day</h2>
             <p className="text-xs text-neutral-400">Sales volume (₹) over recent days</p>
           </div>
 
-          <div className="h-64 sm:h-72 w-full">
+          <div className="h-60 sm:h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={revenueByDay} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
                 <XAxis
                   dataKey="date"
                   stroke="#737373"
-                  fontSize={11}
+                  fontSize={10}
                   tickLine={false}
+                  interval="preserveStartEnd"
                   tickFormatter={(val) => val.slice(5)}
                 />
                 <YAxis
                   stroke="#737373"
-                  fontSize={11}
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => `₹${val}`}
@@ -242,7 +243,7 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Orders by Status Pie Chart (1 col) */}
-        <div className="p-6 sm:p-8 rounded-[28px] bg-neutral-900/80 border border-neutral-800 space-y-6 flex flex-col justify-between">
+        <div className="p-4 sm:p-8 rounded-tile sm:rounded-[28px] bg-neutral-900/80 border border-neutral-800 space-y-4 sm:space-y-6 flex flex-col justify-between">
           <div>
             <h2 className="text-lg font-bold text-white tracking-tight">Orders by Status</h2>
             <p className="text-xs text-neutral-400">Distribution across fulfillment stages</p>

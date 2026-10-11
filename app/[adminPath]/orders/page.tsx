@@ -209,7 +209,7 @@ export default function AdminOrdersPage() {
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-pill capitalize whitespace-nowrap transition-colors ${
+                className={`px-3.5 py-2 rounded-pill capitalize whitespace-nowrap transition-colors min-h-[40px] flex items-center ${
                   statusFilter === st
                     ? "bg-apple-blue text-white font-semibold"
                     : "bg-steel/30 text-porcelain/80 hover:bg-steel"
@@ -222,9 +222,85 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders Container: Mobile Cards (< md) + Desktop Table (md+) */}
       <div className="bg-carbon rounded-tile border border-steel/30 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Cards View (< md) */}
+        <div className="md:hidden divide-y divide-steel/20">
+          {loading ? (
+            <div className="py-12 text-center text-ash text-xs">Loading orders...</div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-12 text-center text-ash text-xs">No matching orders found.</div>
+          ) : (
+            filteredOrders.map((o) => (
+              <div key={o.id} className="p-4 space-y-3">
+                {/* Top: Order ID + Status badge */}
+                <div className="flex items-center justify-between">
+                  <Link
+                    href={`/${adminPath}/orders/${o.id}`}
+                    className="font-mono font-bold text-sm text-porcelain hover:text-electric-link"
+                  >
+                    {o.orderId}
+                  </Link>
+                  <span
+                    className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-pill ${
+                      o.status === "delivered"
+                        ? "bg-success/20 text-success"
+                        : o.status === "cancelled"
+                        ? "bg-error/20 text-error"
+                        : o.status === "dispatched"
+                        ? "bg-warning/20 text-warning"
+                        : "bg-apple-blue/20 text-electric-link"
+                    }`}
+                  >
+                    {ORDER_STATUS_LABELS[o.status] || o.status}
+                  </span>
+                </div>
+
+                {/* Customer & Items Details */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="font-semibold text-porcelain truncate">{o.customer.name}</p>
+                    <a
+                      href={`tel:${o.customer.phone}`}
+                      className="text-ash font-mono text-[11px] hover:underline"
+                    >
+                      +91 {o.customer.phone}
+                    </a>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-porcelain">₹{o.total}</span>
+                    <span className="text-[10px] text-ash block uppercase font-medium">
+                      {o.payment.method} ({o.payment.status})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-ash bg-graphite/60 p-2.5 rounded-tile flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {o.items.length} {o.items.length === 1 ? "item" : "items"}: {o.items.map((it) => it.name).join(", ")}
+                  </span>
+                  <span className="shrink-0 text-ash/80 text-[10px]">
+                    {new Date(o.createdAt).toLocaleDateString("en-IN", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+
+                {/* Full-width 44px Action Button */}
+                <Link
+                  href={`/${adminPath}/orders/${o.id}`}
+                  className="w-full bg-steel/40 hover:bg-steel text-porcelain text-xs font-semibold py-2.5 px-3 rounded-pill flex items-center justify-center min-h-[44px] transition-colors"
+                >
+                  View Order &amp; Operations &rarr;
+                </Link>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View (md+) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-graphite text-ash uppercase font-semibold border-b border-steel/30">
               <tr>

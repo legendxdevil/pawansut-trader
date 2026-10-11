@@ -578,3 +578,57 @@ Rules: omit empty lines (no coupon, no landmark); URL-encode with `encodeURIComp
 
 Categories: Chargers & Adapters, Cables, Earphones & Headphones, Power Banks, Phone Cases & Covers, Screen Protectors, Holders & Stands, Memory Cards & Storage.
 Seed ~8–12 products across these with placeholder prices/images and a `// SAMPLE DATA` marker; at least one product with warranty enabled, one with variants, one out of stock, one with `isNew`. Seed also: 2 announcements (e.g. free delivery above ₹499), `settings/store` defaults from §1, and one sample coupon `WELCOME10` (inactive by default).
+
+---
+
+## 20. Responsive Requirements (Mobile-First)
+
+Mobile is the top priority for both the customer-facing storefront and the merchant admin portal.
+
+### 20.1 Breakpoints & Layout Foundations
+- **Breakpoints**: Base styles target mobile (`320px` to `639px`), enhanced with `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px).
+- **Target Viewports**: 320x568 (SE), 360x640 (Android small), 390x844 (iPhone 14/15/16), 430x932 (Pro Max), 768x1024 (iPad portrait), 1024x768 (iPad landscape), 1440x900 (Desktop).
+- **No Horizontal Page Scroll**: `overflow-x: hidden` on root containers. Multi-column tables and code blocks scroll inside dedicated `.overflow-x-auto` wrappers. Flex and grid items enforce `min-w-0` and text wraps with `break-words`.
+- **Viewport & Safe Areas**: Configured via Next.js 14 `viewport: Viewport` export with `width: "device-width"`, `initialScale: 1`, and `viewportFit: "cover"`. Sticky elements account for `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)`.
+- **Viewport Height**: Full-height drawers, sheets, and pages use `100dvh` with a `100vh` fallback to prevent mobile browser URL bar resizing jumps.
+
+### 20.2 Interaction & Typography
+- **Touch Targets**: All interactive elements (buttons, quantity steppers, close buttons, pagination/slider dots, category chips, wishlist hearts) must have a tap target of at least `44x44px`.
+- **Input Zoom Suppression**: Form controls (`input`, `select`, `textarea`) enforce `font-size: 16px` minimum on screens under `768px` to prevent iOS Safari auto-zooming on focus.
+- **Form Semantics & Autofill**:
+  - Name: `autoComplete="name"`
+  - Phone: `type="tel"`, `inputMode="numeric"`, `autoComplete="tel-national"`, `maxLength={10}`, strict digits-only
+  - Address: `autoComplete="street-address"`
+  - Pincode: `inputMode="numeric"`, `autoComplete="postal-code"`, `maxLength={6}`, strict digits-only
+  - Email: `type="email"`, `autoComplete="email"`
+  - Camera/Gallery Upload: file inputs specify `accept="image/*"`
+- **Hover Isolation**: Hover-only states are strictly encapsulated within `@media (hover: hover)`. Tappable states provide immediate touch-down / active feedback.
+- **Fluid Typography**: Large headings (80px, 96px) scale responsively using CSS `clamp()` (e.g. `clamp(2rem, 7vw, 4.5rem)`). Body typography remains $\ge 14\text{px}$.
+
+### 20.3 Z-Index Hierarchy & Fixed Layering
+Fixed and floating elements adhere to a strict z-index scale to prevent overlap collisions:
+1. `z-30`: Sticky Navbar (44px) & Admin Mobile Header.
+2. `z-35`: Sticky Bottom Action Bars (Product Page Buy Bar, Checkout Sticky Place Order Bar, Admin Sticky Form Save Bar).
+3. `z-40`: Floating WhatsApp Quick Contact Button (offset dynamically above sticky bars with safe-area padding).
+4. `z-45`: Cookie / Consent Notice Bar.
+5. `z-50`: Slide-in Navigation Drawers, Bottom Sheets (Mini-Cart, Catalog Filters), and Lightbox Overlays.
+
+### 20.4 Customer Storefront Experience
+- **Navbar**: 44px compact header; hamburger opens full-height `100dvh` slide-in sheet drawer; cart button with badge remains permanently accessible.
+- **Announcement Strip**: Single-line marquee with horizontal touch swipe drag gestures and 44px tap targets.
+- **Hero Slider**: Full-bleed swipeable banner; arrows hidden on mobile viewports; pagination dots feature 44px touch areas; zero layout shifts.
+- **Category Navigation**: Horizontal scroll-snap container with hidden scrollbar and chips $\ge 64\text{px}$ wide with labels centered underneath.
+- **Product Catalog Grid**: Strictly 2 columns on 320–639px, 3 on md, 4 on lg+. Product cards feature 2-line title clamping, badges positioned so as not to obscure pricing, and $\ge 44\text{px}$ wishlist heart buttons.
+- **Search & Filters**: Compact search bar accompanied by a mobile "Filters" button triggering an internally scrolling bottom sheet modal with Apply and Clear actions.
+- **Product Detail**: Image gallery supports touch swipe gestures; variant chips wrap cleanly; bottom sticky bar presents price and direct Add to Bag / Buy Now triggers respecting home indicator safe-areas.
+- **Mini-Cart & Cart Page**: Slide-up bottom sheet on mobile screens with 44px quantity steppers and sticky order subtotal CTA.
+- **Checkout**: Single-column layout; collapsible order summary accordion at top; auto-focus and smooth scroll-into-view to the first invalid field upon validation failure.
+- **Order Success**: Prominent full-width WhatsApp notification CTA button with formatted line-item preview.
+
+### 20.5 Merchant Admin Portal
+- **Admin Navigation**: Desktop sidebar transforms into a slide-in drawer on mobile (`< lg`), toggled via a 44px hamburger button in the sticky mobile admin header.
+- **Data Tables**: Swapped to a responsive Card/List layout on `< md` screens (displaying essential identifiers, status badges, totals, and large action buttons) while preserving multi-column tables with `overflow-x-auto` on larger viewports.
+- **Order Management & Detail**: Order detail stacks vertically; status transition buttons, payment status toggles, and warranty card issue triggers feature $\ge 40\text{px}$ tap targets. Invoices support narrow-screen rendering and print stylesheets.
+- **Forms**: Single-column layouts with native camera/gallery upload (`accept="image/*"`) and fixed sticky bottom Save bars.
+- **Analytics Charts**: Responsive Recharts containers with preserved start/end axis ticks and touch-friendly tooltips adapted for 360px widths.
+

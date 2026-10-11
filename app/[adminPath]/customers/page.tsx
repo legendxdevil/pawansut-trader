@@ -51,55 +51,89 @@ export default function AdminCustomersPage() {
             <p className="text-[11px]">Customers will automatically appear after placing guest orders.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-graphite text-ash uppercase font-semibold border-b border-steel/30">
-                <tr>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Mobile</th>
-                  <th className="py-3 px-4">Last Address</th>
-                  <th className="py-3 px-4">Orders</th>
-                  <th className="py-3 px-4">Total Spent</th>
-                  <th className="py-3 px-4">Last Order</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-steel/20">
-                {customers.map((c) => (
-                  <tr key={c.phone} className="hover:bg-steel/10 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-porcelain">
-                      {c.name}
-                    </td>
-
-                    <td className="py-3 px-4 font-mono text-porcelain/90">
+          <>
+            {/* Mobile Cards (< md) */}
+            <div className="md:hidden divide-y divide-steel/20">
+              {customers.map((c) => (
+                <div key={c.phone} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-porcelain">{c.name}</span>
+                    <span className="font-semibold text-xs text-success">₹{c.totalSpent}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-ash">
+                    <a
+                      href={`tel:${c.phone}`}
+                      className="font-mono text-electric-link hover:underline min-h-[36px] flex items-center"
+                    >
                       +91 {c.phone}
-                    </td>
+                    </a>
+                    <span className="bg-steel/50 text-porcelain px-2.5 py-0.5 rounded-pill text-[11px] font-medium">
+                      {c.ordersCount} {c.ordersCount === 1 ? "order" : "orders"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-ash truncate">{c.lastAddress}</p>
+                  <p className="text-[10px] text-ash/80">
+                    Last active: {new Date(c.lastOrderAt).toLocaleDateString("en-IN", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
 
-                    <td className="py-3 px-4 text-ash truncate max-w-xs">
-                      {c.lastAddress}
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span className="bg-steel/50 text-porcelain px-2.5 py-0.5 rounded-pill font-medium">
-                        {c.ordersCount} orders
-                      </span>
-                    </td>
-
-                    <td className="py-3 px-4 font-semibold text-success">
-                      ₹{c.totalSpent}
-                    </td>
-
-                    <td className="py-3 px-4 text-ash">
-                      {new Date(c.lastOrderAt).toLocaleDateString("en-IN", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </td>
+            {/* Desktop Table (md+) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-graphite text-ash uppercase font-semibold border-b border-steel/30">
+                  <tr>
+                    <th className="py-3 px-4">Customer</th>
+                    <th className="py-3 px-4">Mobile</th>
+                    <th className="py-3 px-4">Last Address</th>
+                    <th className="py-3 px-4">Orders</th>
+                    <th className="py-3 px-4">Total Spent</th>
+                    <th className="py-3 px-4">Last Order</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-steel/20">
+                  {customers.map((c) => (
+                    <tr key={c.phone} className="hover:bg-steel/10 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-porcelain">
+                        {c.name}
+                      </td>
+
+                      <td className="py-3 px-4 font-mono text-porcelain/90">
+                        +91 {c.phone}
+                      </td>
+
+                      <td className="py-3 px-4 text-ash truncate max-w-xs">
+                        {c.lastAddress}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="bg-steel/50 text-porcelain px-2.5 py-0.5 rounded-pill font-medium">
+                          {c.ordersCount} orders
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 font-semibold text-success">
+                        ₹{c.totalSpent}
+                      </td>
+
+                      <td className="py-3 px-4 text-ash">
+                        {new Date(c.lastOrderAt).toLocaleDateString("en-IN", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

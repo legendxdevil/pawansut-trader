@@ -112,7 +112,7 @@ export default function AdminAnnouncementsPage() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               required
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-3 rounded-tile border border-slate focus:border-apple-blue text-xs resize-none"
+              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-3 rounded-tile border border-slate focus:border-apple-blue text-base sm:text-xs resize-none placeholder:text-ash"
             />
           </div>
 
@@ -123,7 +123,7 @@ export default function AdminAnnouncementsPage() {
               placeholder="/products or /contact"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs"
+              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs placeholder:text-ash"
             />
           </div>
 
@@ -135,7 +135,7 @@ export default function AdminAnnouncementsPage() {
               value={order}
               onChange={(e) => setOrder(e.target.value)}
               required
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs"
+              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs"
             />
           </div>
 
@@ -152,7 +152,7 @@ export default function AdminAnnouncementsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-xs py-2.5 rounded-pill transition-transform active:scale-95 flex items-center justify-center gap-2"
+            className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-xs py-3 rounded-pill transition-transform active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
           >
             {saving ? (
               <>

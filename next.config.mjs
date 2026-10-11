@@ -16,6 +16,11 @@ const nextConfig = {
     ],
   },
 
+  // External packages for Node server environment (prevents dev webpack chunking issues with firebase-admin)
+  experimental: {
+    serverComponentsExternalPackages: ["firebase-admin"],
+  },
+
   // Security headers per spec §12.4
   // NOTE: Strict CSP is deliberately avoided to ensure compatibility with Cashfree payment iframe/checkout in Phase 9.
   async headers() {

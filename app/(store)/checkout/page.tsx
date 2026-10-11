@@ -3,7 +3,16 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldCheck, Truck, AlertCircle, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  ShieldCheck,
+  Truck,
+  AlertCircle,
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  ChevronDown,
+  ShoppingCart,
+} from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { STORE_CONFIG } from "@/lib/store-config";
 import { checkoutFormSchema } from "@/lib/validation/checkout";
@@ -27,6 +36,7 @@ export default function CheckoutPage() {
     honeypot: "",
   });
 
+  const [showMobileSummary, setShowMobileSummary] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -87,7 +97,8 @@ export default function CheckoutPage() {
         ...prev,
         hospitalConfirmed: "Please confirm that your delivery is at the hospital campus.",
       }));
-      hospitalCheckRef.current?.focus();
+      hospitalCheckRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      hospitalCheckRef.current?.focus({ preventScroll: true });
       return;
     }
 
@@ -123,11 +134,19 @@ export default function CheckoutPage() {
       }
       setErrors(fieldErrors);
 
-      // Focus first error field (§7.7)
-      if (fieldErrors.fullName) nameRef.current?.focus();
-      else if (fieldErrors.mobile) mobileRef.current?.focus();
-      else if (fieldErrors.address) addressRef.current?.focus();
-      else if (fieldErrors.pincode) pincodeRef.current?.focus();
+      // Focus and scroll first error field into view (§7.7, §13)
+      const scrollToAndFocus = (ref: React.RefObject<HTMLElement>) => {
+        if (ref.current) {
+          ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+          ref.current.focus({ preventScroll: true });
+        }
+      };
+
+      if (fieldErrors.fullName) scrollToAndFocus(nameRef);
+      else if (fieldErrors.mobile) scrollToAndFocus(mobileRef);
+      else if (fieldErrors.address) scrollToAndFocus(addressRef);
+      else if (fieldErrors.pincode) scrollToAndFocus(pincodeRef);
+      else if (fieldErrors.hospitalConfirmed) scrollToAndFocus(hospitalCheckRef);
       return;
     }
 
@@ -166,12 +185,12 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 pb-32 lg:pb-12 space-y-6 sm:space-y-8">
       {/* Top back button & heading */}
       <div className="flex items-center gap-4 border-b border-steel/30 pb-4">
         <Link
           href="/cart"
-          className="text-ash hover:text-porcelain transition-colors p-1"
+          className="text-ash hover:text-porcelain transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 rounded-full"
           aria-label="Back to cart"
         >
           <ArrowLeft size={18} />
@@ -189,9 +208,89 @@ export default function CheckoutPage() {
         </div>
       )}
 
+      {/* Mobile Collapsible Order Summary (< lg) (§7.7, STEP 3) */}
+      <div className="lg:hidden bg-carbon rounded-tile border border-steel/30 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowMobileSummary((prev) => !prev)}
+          className="w-full flex items-center justify-between p-4 text-xs font-semibold text-porcelain min-h-[44px] hover:bg-steel/10 transition-colors"
+          aria-expanded={showMobileSummary}
+        >
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={16} className="text-apple-blue" />
+            <span>
+              {showMobileSummary ? "Hide order summary" : "Show order summary"} ({hydratedItems.length} {hydratedItems.length === 1 ? "item" : "items"})
+            </span>
+            <ChevronDown
+              size={14}
+              className={`text-ash transition-transform duration-200 ${
+                showMobileSummary ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+          <span className="text-sm font-bold text-apple-blue">₹{total}</span>
+        </button>
+
+        {showMobileSummary && (
+          <div className="p-4 pt-0 border-t border-steel/20 space-y-4">
+            {/* Items list */}
+            <div className="max-h-60 overflow-y-auto space-y-3 pr-1 pt-3">
+              {hydratedItems.map((item) => (
+                <div
+                  key={`${item.productId}-${item.variantId}`}
+                  className="flex items-center justify-between gap-3 text-xs border-b border-steel/15 pb-2.5"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1 flex-shrink-0">
+                      {item.image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="max-h-full max-w-full object-contain mix-blend-multiply"
+                        />
+                      ) : (
+                        <span className="text-[9px] font-bold text-obsidian/60">PT</span>
+                      )}
+                    </div>
+                    <div className="truncate">
+                      <p className="text-porcelain font-medium truncate">{item.name}</p>
+                      <p className="text-ash text-[11px]">
+                        {item.variantLabel} &times; {item.qty}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-porcelain font-semibold whitespace-nowrap">
+                    ₹{item.price * item.qty}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Price breakdown */}
+            <div className="space-y-2 text-xs border-t border-steel/20 pt-3">
+              <div className="flex justify-between text-ash">
+                <span>Subtotal</span>
+                <span className="text-porcelain font-medium">₹{subtotal}</span>
+              </div>
+              <div className="flex justify-between text-ash">
+                <span>Delivery (Hospital Campus)</span>
+                <span className={isFreeDelivery ? "text-success font-semibold" : "text-porcelain font-medium"}>
+                  {isFreeDelivery ? "FREE" : `₹${deliveryCharge}`}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-porcelain pt-2 border-t border-steel/20">
+                <span>Total</span>
+                <span className="text-apple-blue">₹{total}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Main Grid: Form (Left) & Summary (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Checkout Form (8 cols on lg) */}
+        {/* Checkout Form (7 cols on lg) */}
         <form onSubmit={handleSubmit} noValidate className="lg:col-span-7 space-y-6">
           {/* Honeypot field (hidden from screen & readers) */}
           <div className="hidden" aria-hidden="true">
@@ -225,7 +324,7 @@ export default function CheckoutPage() {
                   className="w-4 h-4 mt-0.5 rounded border-steel bg-graphite text-apple-blue focus:ring-0"
                 />
                 <span className="font-medium">
-                  {STORE_CONFIG.hospitalConfirmationText} <span className="text-error">*</span>
+                  {STORE_CONFIG.hospitalConfirmationText} <span className="text-error font-bold">*</span>
                 </span>
               </label>
               {errors.hospitalConfirmed && (
@@ -235,7 +334,7 @@ export default function CheckoutPage() {
           )}
 
           {/* Contact & Delivery Details Card */}
-          <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-5">
+          <div className="bg-carbon rounded-tile border border-steel/30 p-5 sm:p-6 space-y-5">
             <h2 className="text-base font-semibold tracking-tight text-porcelain border-b border-steel/20 pb-3">
               1. Delivery Details
             </h2>
@@ -248,12 +347,13 @@ export default function CheckoutPage() {
               <input
                 ref={nameRef}
                 type="text"
+                autoComplete="name"
                 placeholder="Enter your full name"
                 value={formData.fullName}
                 onChange={(e) => handleInputChange("fullName", e.target.value)}
                 aria-required="true"
                 aria-describedby={errors.fullName ? "name-error" : undefined}
-                className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border text-sm placeholder:text-ash ${
+                className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border text-base sm:text-sm placeholder:text-ash ${
                   errors.fullName ? "border-error focus:border-error" : "border-slate focus:border-apple-blue"
                 }`}
               />
@@ -277,13 +377,14 @@ export default function CheckoutPage() {
                   ref={mobileRef}
                   type="tel"
                   inputMode="numeric"
+                  autoComplete="tel-national"
                   maxLength={10}
                   placeholder="9876543210"
                   value={formData.mobile}
                   onChange={handleMobileChange}
                   aria-required="true"
                   aria-describedby={errors.mobile ? "mobile-error" : undefined}
-                  className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain pl-12 pr-4 py-2.5 rounded-pill border text-sm tracking-wide placeholder:text-ash ${
+                  className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain pl-12 pr-4 py-2.5 rounded-pill border text-base sm:text-sm tracking-wide placeholder:text-ash ${
                     errors.mobile ? "border-error focus:border-error" : "border-slate focus:border-apple-blue"
                   }`}
                 />
@@ -303,12 +404,13 @@ export default function CheckoutPage() {
               <textarea
                 ref={addressRef}
                 rows={3}
+                autoComplete="street-address"
                 placeholder="Building, Ward, Department, Floor, or Room number"
                 value={formData.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 aria-required="true"
                 aria-describedby={errors.address ? "address-error" : undefined}
-                className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-4 rounded-tile border text-sm placeholder:text-ash resize-none ${
+                className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-4 rounded-tile border text-base sm:text-sm placeholder:text-ash resize-none ${
                   errors.address ? "border-error focus:border-error" : "border-slate focus:border-apple-blue"
                 }`}
               />
@@ -325,10 +427,11 @@ export default function CheckoutPage() {
                 <label className="text-xs font-medium text-ash">Landmark (Optional)</label>
                 <input
                   type="text"
+                  autoComplete="address-line2"
                   placeholder="e.g. Near OPD Gate"
                   value={formData.landmark}
                   onChange={(e) => handleInputChange("landmark", e.target.value)}
-                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm placeholder:text-ash"
+                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-sm placeholder:text-ash"
                 />
               </div>
 
@@ -340,13 +443,14 @@ export default function CheckoutPage() {
                   ref={pincodeRef}
                   type="tel"
                   inputMode="numeric"
+                  autoComplete="postal-code"
                   maxLength={6}
                   placeholder="110040"
                   value={formData.pincode}
                   onChange={handlePincodeChange}
                   aria-required="true"
                   aria-describedby={errors.pincode ? "pincode-error" : undefined}
-                  className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border text-sm placeholder:text-ash ${
+                  className={`w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border text-base sm:text-sm placeholder:text-ash ${
                     errors.pincode ? "border-error focus:border-error" : "border-slate focus:border-apple-blue"
                   }`}
                 />
@@ -364,9 +468,10 @@ export default function CheckoutPage() {
                 <label className="text-xs font-medium text-ash">City</label>
                 <input
                   type="text"
+                  autoComplete="address-level2"
                   value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
-                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm"
+                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-sm"
                 />
               </div>
 
@@ -374,17 +479,18 @@ export default function CheckoutPage() {
                 <label className="text-xs font-medium text-ash">Email (Optional)</label>
                 <input
                   type="email"
+                  autoComplete="email"
                   placeholder="for invoice copy"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm placeholder:text-ash"
+                  className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-sm placeholder:text-ash"
                 />
               </div>
             </div>
           </div>
 
           {/* Payment Mode Selection Card */}
-          <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-4">
+          <div className="bg-carbon rounded-tile border border-steel/30 p-5 sm:p-6 space-y-4">
             <h2 className="text-base font-semibold tracking-tight text-porcelain border-b border-steel/20 pb-3">
               2. Payment Mode <span className="text-error font-bold">*</span>
             </h2>
@@ -392,7 +498,7 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* COD Option */}
               <label
-                className={`p-4 rounded-tile border cursor-pointer transition-all flex items-start gap-3 ${
+                className={`p-4 rounded-tile border cursor-pointer transition-all flex items-start gap-3 min-h-[44px] ${
                   formData.paymentMode === "cod"
                     ? "border-apple-blue bg-apple-blue/10"
                     : "border-steel/40 bg-graphite/60 hover:border-slate"
@@ -418,7 +524,7 @@ export default function CheckoutPage() {
               </label>
 
               {/* Online Payment Option (Disabled per §7.7 and §9) */}
-              <div className="p-4 rounded-tile border border-steel/30 bg-graphite/40 opacity-60 cursor-not-allowed space-y-1 relative">
+              <div className="p-4 rounded-tile border border-steel/30 bg-graphite/40 opacity-60 cursor-not-allowed space-y-1 relative min-h-[44px]">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-sm text-porcelain">Online (Cashfree)</span>
                   <span className="text-[10px] bg-steel/60 text-ash px-2 py-0.5 rounded-pill">
@@ -432,11 +538,11 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Submit Button */}
+          {/* In-form Submit Button (visible on desktop) */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-base py-3.5 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none"
+            className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-base py-3.5 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none min-h-[44px]"
           >
             {isSubmitting ? (
               <>
@@ -447,10 +553,32 @@ export default function CheckoutPage() {
               <span>Place Order via COD (₹{total})</span>
             )}
           </button>
+
+          {/* Sticky Mobile Place Order Bar (< lg) */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-carbon/95 backdrop-blur-md border-t border-steel/30 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-35 flex items-center justify-between gap-3 shadow-2xl">
+            <div>
+              <span className="text-[10px] text-ash block uppercase font-semibold">Total to Pay</span>
+              <span className="text-base font-bold text-porcelain">₹{total}</span>
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-sm py-3 px-4 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 min-h-[44px]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Confirming...</span>
+                </>
+              ) : (
+                <span>Place Order via COD</span>
+              )}
+            </button>
+          </div>
         </form>
 
-        {/* Order Summary Sidebar (5 cols on lg) */}
-        <div className="lg:col-span-5 bg-carbon rounded-tile border border-steel/30 p-6 space-y-6 sticky top-16">
+        {/* Order Summary Sidebar (Desktop only, 5 cols on lg) */}
+        <div className="hidden lg:block lg:col-span-5 bg-carbon rounded-tile border border-steel/30 p-6 space-y-6 sticky top-16">
           <h2 className="text-base font-semibold tracking-tight text-porcelain border-b border-steel/20 pb-3">
             Order Review ({hydratedItems.length})
           </h2>

@@ -294,3 +294,56 @@ Project build log per phase, tracking status, acceptance checks, command outcome
 - **Open items / TODO(verify)**:
   - `TODO(verify)`: Live image upload to ImgBB CDN requires owner to supply `IMGBB_API_KEY` in `.env.local` to execute end-to-end live upload against `api.imgbb.com/1/upload`.
 
+## Mobile-Responsive Pass: Full Customer & Admin Audit and Optimization
+- **Status**: done
+- **Spec sections**: §5, §6, §7, §13, §19, §20 (Mobile Priority Pass)
+- **Tested viewports**: 320x568, 360x640, 390x844, 430x932, 768x1024, 1024x768, 1440x900.
+
+### Defect List & Fix Verification
+
+| # | Page / Component | Viewport Width(s) | Defect Identified | Fix Implemented | Status |
+|---|---|---|---|---|---|
+| D1 | Global (`layout.tsx`, `globals.css`) | 320px–430px | Missing Next 14 `viewport` export (`viewportFit: cover`); safe-area insets not applied to fixed bars; inputs zoom Safari | Exported `viewport: Viewport` with `viewportFit: "cover"`; added `.pb-safe`, `.pt-safe`, `100dvh`, and `@media (max-width: 768px) { font-size: 16px !important }` for inputs | FIXED |
+| D2 | Navbar (`navbar.tsx`) | 360px–430px | Hamburger opened standard dropdown; links cramped; icon buttons lacked 44x44px touch targets | Replaced dropdown with full-height `100dvh` slide-in sheet drawer with body scroll lock; expanded all interactive touch targets to $\ge 44\text{px}$; cart badge sticky and always accessible | FIXED |
+| D3 | Announcement Strip (`announcement-strip.tsx`) | 360px–430px | Dots and chevrons lacked 44x44px touch targets; no touch swipe gestures | Added Framer Motion touch swipe drag gestures (`drag="x"`); expanded arrow buttons and pagination dots to 44px tap targets | FIXED |
+| D4 | Home Page (`page.tsx`) | 360px–430px | Product grids used single-column layout; category icons wrapped into tall grid | Converted product grid to `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`; transformed categories to horizontal scroll-snap container with hidden scrollbar and $\ge 76\text{px}$ chips | FIXED |
+| D5 | Catalog (`catalog-view.tsx`) | 360px–430px | Filter/sort controls took up >60% vertical viewport; lacked mobile bottom sheet; 1-col grid | Built compact mobile search + "Filters" button opening bottom sheet modal with Apply/Clear buttons; updated product grid to 2 columns on mobile | FIXED |
+| D6 | Product Card (`product-card.tsx`) | 360px–430px | Wishlist heart tap area ~26x26px (<44px); price and button wrapped clumsily | Expanded heart touch target to 44x44px with centered icon; optimized padding to `p-2.5 sm:p-4`; enforced `line-clamp-2` on product titles | FIXED |
+| D7 | Product Page (`products/[slug]`) | 360px–430px | No sticky bottom bar with price + Add to Cart / Buy Now; gallery lacked swipe gestures; stepper buttons <44px | Added fixed bottom action bar (`z-35`) with safe-area padding; added touch swipe handlers to `ProductGallery`; enlarged steppers to 44px | FIXED |
+| D8 | Mini Cart Drawer (`mini-cart-drawer.tsx`) | 360px–430px | Right-side drawer left awkward 40px gap on narrow screens; steppers and delete button <44px | Transformed mobile drawer into full-width bottom sheet (`< sm`) with `100dvh` backdrop, 44px steppers, 44px remove action, and sticky checkout button | FIXED |
+| D9 | Checkout (`checkout/page.tsx`) | 360px–430px | Order summary at bottom; lack of top collapsible accordion; inputs triggered Safari zoom (<16px); no focus on error | Created collapsible top order summary accordion ("Show order summary (₹{total})"); enforced 16px inputs; added autofill tags; added smooth scroll-into-view and auto-focus for first invalid field; added sticky place-order bar | FIXED |
+| D10 | Floating Overlaps | 360px–430px | WhatsApp button collides with sticky bars and cookie notice | Established defined z-index hierarchy (`z-30` header/nav, `z-35` sticky bars, `z-40` WhatsApp with safe-area offset, `z-45` cookie notice, `z-50` modals); cookie notice button enlarged to 44px | FIXED |
+| D11 | Admin Layout (`admin-nav.tsx`) | 360px–1024px | Sidebar hidden below `md` with only basic Menu link; admin could not reach orders/products on phone | Created `AdminNav` component with sticky mobile header (`lg:hidden`), 44px hamburger trigger, full-height slide-in drawer (`100dvh`) with body scroll lock, public store link, and sign-out action | FIXED |
+| D12 | Admin Tables (Orders, Products, Customers) | 360px–768px | Wide 7-8 column HTML tables required cumbersome horizontal scrolling | Implemented responsive Card/List layout (`< md`) displaying identifiers, status badges, totals, items summary, and 44px action buttons; preserved multi-column tables on `md+` | FIXED |
+| D13 | Admin Forms (`product-form.tsx`, Settings) | 360px–768px | File input lacked `accept="image/*"`; no sticky Save bar at bottom of mobile screen | Added `accept="image/*"` for direct phone camera/gallery uploads; added sticky bottom Save bar (`z-30`) with safe-area bottom padding; enlarged image reorder/delete buttons to 36–44px | FIXED |
+| D14 | Admin Analytics (`analytics/page.tsx`) | 360px–430px | Recharts BarChart X-axis dates overlapped at 360px; tile margins cramped | Added `interval="preserveStartEnd"` and fontSize 10 to XAxis; adjusted margins; reduced mobile tile padding for seamless 360px rendering | FIXED |
+
+### Commands Run & Verification Results
+- `npx tsc --noEmit` -> PASS (0 type errors)
+- `npm run lint` -> PASS (0 warnings, 0 errors)
+- `npm run build` -> PASS (all 35 routes compiled into optimized production bundle)
+- `npm run dev -- -H 0.0.0.0 -p 3000` -> PASS (running as background daemon ready for network inspection)
+
+### Acceptance Checks
+- [x] Zero horizontal scrolling down to 320px viewport width across customer and admin views.
+- [x] Next.js 14 `viewport` export configured with `width: device-width`, `initialScale: 1`, `viewportFit: cover`.
+- [x] Safe-area insets (`env(safe-area-inset-bottom/top)`) and `100dvh` heights applied across sheets and sticky bars.
+- [x] Minimum 44x44px touch targets for buttons, quantity steppers, sliders, close triggers, and wishlist hearts.
+- [x] Minimum 16px font-size for mobile inputs to suppress iOS Safari auto-zoom on focus.
+- [x] Strict input keyboard hints and autofill attributes (`name`, `tel-national`, `street-address`, `postal-code`, `email`).
+- [x] 2-column e-commerce grid for products on mobile (`320px` to `639px`).
+- [x] Compact mobile search with bottom sheet Filters dialog.
+- [x] Product detail sticky bottom action bar respecting safe-areas.
+- [x] Checkout single-column layout with collapsible top order summary and error scroll-into-view.
+- [x] Admin panel features mobile header + slide-in drawer (`< lg`).
+- [x] Admin data tables feature Card/List layout on `< md` screens.
+- [x] Admin product image upload supports camera/gallery via `accept="image/*"` and sticky Save bar.
+- [x] PROJECT_SPEC.md updated with Section 20 ("Responsive Requirements").
+- [x] DECISIONS.md updated with responsive architectural decisions.
+
+### Open Items / TODO(verify)
+- `TODO(verify)`: Real phone on local Wi-Fi test: With the dev server running on `0.0.0.0:3000`, open `http://<LOCAL_LAN_IP>:3000` on a physical iOS (iPhone) and Android device to physically verify touch ergonomics, swipe smoothness, safe-area clearance on devices with a notch/dynamic island/home indicator, and on-screen keyboard behavior during checkout.
+- `TODO(verify)`: Mobile Lighthouse audit: In an environment with Chromium or Chrome binaries available, run mobile Lighthouse audits (`npx lighthouse http://localhost:3000 --form-factor=mobile --view`) on `/`, `/products/fast-charging-cable-65w`, and `/checkout` to record Performance, Accessibility, Best Practices, and SEO scores.
+
+
+

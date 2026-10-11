@@ -170,7 +170,7 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
           <label className="text-xs font-semibold text-ash uppercase tracking-wider block">
             Select Variant: <span className="text-porcelain font-normal">{selectedVariant.label}</span>
           </label>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-2">
             {variants.map((v) => {
               const isSelected = v.id === selectedVariant.id;
               const isVarOutOfStock = v.stock <= 0;
@@ -178,7 +178,7 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
                 <button
                   key={v.id}
                   onClick={() => handleVariantSelect(v)}
-                  className={`px-4 py-2 rounded-pill text-xs font-medium border transition-all flex items-center gap-2 ${
+                  className={`min-h-[44px] px-4 py-2.5 rounded-pill text-xs font-medium border transition-all flex items-center gap-2 active:scale-95 ${
                     isSelected
                       ? "border-apple-blue bg-apple-blue/15 text-white"
                       : "border-slate bg-carbon hover:border-porcelain text-porcelain/90"
@@ -199,23 +199,23 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
       <div className="space-y-4 border-t border-steel/30 pt-4">
         <div className="flex items-center gap-4">
           <span className="text-xs text-ash font-medium">Quantity</span>
-          <div className="flex items-center bg-carbon border border-steel/50 rounded-pill p-1">
+          <div className="flex items-center bg-carbon border border-steel/50 rounded-pill p-0.5">
             <button
               onClick={() => handleQtyChange(-1)}
               disabled={qty <= 1 || isOutOfStock}
               aria-label="Decrease quantity"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-porcelain hover:bg-steel/60 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-porcelain hover:bg-steel/60 disabled:opacity-30 disabled:hover:bg-transparent"
             >
-              <Minus size={14} />
+              <Minus size={16} />
             </button>
-            <span className="w-10 text-center font-semibold text-sm text-porcelain">{qty}</span>
+            <span className="w-10 text-center font-semibold text-sm text-porcelain select-none">{qty}</span>
             <button
               onClick={() => handleQtyChange(1)}
               disabled={qty >= maxAllowedQty || isOutOfStock}
               aria-label="Increase quantity"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-porcelain hover:bg-steel/60 disabled:opacity-30 disabled:hover:bg-transparent"
+              className="min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-porcelain hover:bg-steel/60 disabled:opacity-30 disabled:hover:bg-transparent"
             >
-              <Plus size={14} />
+              <Plus size={16} />
             </button>
           </div>
         </div>
@@ -225,7 +225,7 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
           <button
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className="w-full sm:flex-1 bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/50 disabled:text-ash text-white text-sm font-medium py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none"
+            className="w-full sm:flex-1 min-h-[48px] bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/50 disabled:text-ash text-white text-sm font-semibold py-3 px-6 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none"
           >
             <ShoppingBag size={18} />
             {isOutOfStock ? "Out of Stock" : "Add to Cart"}
@@ -234,7 +234,7 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
           <button
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className="w-full sm:flex-1 bg-transparent hover:bg-steel/30 disabled:opacity-40 text-porcelain border border-slate hover:border-porcelain text-sm font-medium py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none"
+            className="w-full sm:flex-1 min-h-[48px] bg-transparent hover:bg-steel/30 disabled:opacity-40 text-porcelain border border-slate hover:border-porcelain text-sm font-semibold py-3 px-6 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none"
           >
             <Zap size={18} />
             Buy Now
@@ -243,7 +243,7 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
           <button
             onClick={toggleWishlist}
             aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-            className="p-3 rounded-full border border-steel/60 hover:border-porcelain transition-colors text-ash hover:text-porcelain"
+            className="min-w-[48px] min-h-[48px] rounded-full border border-steel/60 hover:border-porcelain transition-colors text-ash hover:text-porcelain flex items-center justify-center shrink-0"
           >
             <Heart size={20} className={isWishlisted ? "fill-error text-error" : ""} />
           </button>
@@ -278,6 +278,37 @@ export function ProductInteractiveSection({ product }: ProductInteractiveSection
         <p>• Free delivery for orders of ₹{STORE_CONFIG.freeDeliveryAbove} or more.</p>
         <p>• ₹{STORE_CONFIG.defaultDeliveryCharge} delivery charge applies on orders below ₹{STORE_CONFIG.freeDeliveryAbove}.</p>
         <p className="text-porcelain/80">• {STORE_CONFIG.hospitalNotice}</p>
+      </div>
+
+      {/* Sticky Bottom Bar on Mobile per STEP 3 */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-35 bg-carbon/95 backdrop-blur-md border-t border-steel/40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0.75rem))] flex items-center justify-between gap-3 shadow-2xl">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] text-ash uppercase font-semibold">Total Price</span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold text-porcelain">₹{currentPrice * qty}</span>
+            {qty > 1 && <span className="text-[10px] text-ash font-mono">({qty}x)</span>}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <button
+            onClick={handleAddToCart}
+            disabled={isOutOfStock}
+            className="flex-1 min-h-[44px] bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/50 disabled:text-ash text-white text-xs font-semibold px-4 py-2.5 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-md"
+          >
+            <ShoppingBag size={16} />
+            <span className="truncate">{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+          </button>
+
+          <button
+            onClick={handleBuyNow}
+            disabled={isOutOfStock}
+            className="min-h-[44px] bg-transparent hover:bg-steel/30 disabled:opacity-40 text-porcelain border border-slate text-xs font-semibold px-4 py-2.5 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-1 shrink-0"
+          >
+            <Zap size={16} />
+            <span>Buy</span>
+          </button>
+        </div>
       </div>
     </div>
   );

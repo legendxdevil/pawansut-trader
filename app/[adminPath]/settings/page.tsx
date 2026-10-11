@@ -179,11 +179,12 @@ export default function AdminSettingsPage() {
               <label className="text-xs font-medium text-porcelain">WhatsApp Support Number (10 digits) *</label>
               <input
                 type="text"
+                inputMode="numeric"
                 maxLength={10}
                 value={settings.whatsappNumber}
                 onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value.replace(/\D/g, "") })}
                 required
-                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs"
+                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs"
               />
             </div>
 
@@ -193,7 +194,7 @@ export default function AdminSettingsPage() {
                 type="email"
                 value={settings.supportEmail || ""}
                 onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs"
+                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs"
               />
             </div>
 
@@ -203,29 +204,32 @@ export default function AdminSettingsPage() {
                 rows={2}
                 value={settings.address || ""}
                 onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-3 rounded-tile border border-slate focus:border-apple-blue text-xs resize-none"
+                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-3 rounded-tile border border-slate focus:border-apple-blue text-base sm:text-xs resize-none"
               />
             </div>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-xs py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          {saving ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              <span>Saving Store Settings...</span>
-            </>
-          ) : (
-            <>
-              <Save size={16} />
-              <span>Save Configuration</span>
-            </>
-          )}
-        </button>
+        {/* Sticky Save Bar (§STEP 4) */}
+        <div className="sticky bottom-0 bg-carbon/95 backdrop-blur-md -mx-3.5 sm:-mx-6 p-4 border-t border-steel/30 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] z-30 shadow-2xl">
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-xs py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 min-h-[44px]"
+          >
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Saving Store Settings...</span>
+              </>
+            ) : (
+              <>
+                <Save size={16} />
+                <span>Save Configuration</span>
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );

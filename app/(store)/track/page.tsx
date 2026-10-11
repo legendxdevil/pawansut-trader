@@ -115,7 +115,7 @@ function TrackContent() {
               value={orderId}
               onChange={(e) => setOrderId(e.target.value.toUpperCase())}
               required
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm uppercase placeholder:text-ash"
+              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-sm uppercase placeholder:text-ash"
             />
           </div>
 
@@ -126,12 +126,13 @@ function TrackContent() {
             <input
               type="tel"
               inputMode="numeric"
+              autoComplete="tel-national"
               maxLength={10}
               placeholder="9876543210"
               value={phone}
               onChange={handlePhoneChange}
               required
-              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm placeholder:text-ash"
+              className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-sm placeholder:text-ash"
             />
           </div>
         </div>
@@ -139,7 +140,7 @@ function TrackContent() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-sm py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none"
+          className="w-full bg-apple-blue hover:bg-apple-blue/90 disabled:bg-steel/60 text-white font-semibold text-sm py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 shadow-none min-h-[44px]"
         >
           {loading ? (
             <>

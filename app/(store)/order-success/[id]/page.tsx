@@ -87,7 +87,7 @@ export default async function OrderSuccessPage({ params }: OrderSuccessPageProps
             href={whatsappLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-sm sm:text-base py-3.5 px-6 rounded-pill flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-none"
+            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-sm sm:text-base py-3.5 px-6 rounded-pill flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-none min-h-[48px]"
           >
             <MessageCircle size={20} className="fill-current" />
             <span>Send Order on WhatsApp</span>
@@ -103,7 +103,7 @@ export default async function OrderSuccessPage({ params }: OrderSuccessPageProps
         <h2 className="text-xs font-semibold text-ash uppercase tracking-wider">
           Pre-Formatted WhatsApp Message Template
         </h2>
-        <pre className="bg-carbon text-porcelain/90 p-4 rounded-tile text-xs font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed border border-steel/20">
+        <pre className="bg-carbon text-porcelain/90 p-4 rounded-tile text-xs font-mono overflow-x-auto whitespace-pre-wrap break-words leading-relaxed border border-steel/20">
           {whatsappMessage}
         </pre>
       </div>

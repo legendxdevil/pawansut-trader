@@ -534,11 +534,11 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
             </p>
           </div>
 
-          {/* Hidden File Input */}
+          {/* Hidden File Input (accept="image/*" for camera/gallery per §STEP 4) */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
             multiple
             onChange={handleFileUpload}
             className="hidden"
@@ -548,14 +548,14 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors shrink-0 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-pill bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors shrink-0 disabled:opacity-50 min-h-[44px]"
           >
             {uploading ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
               <Upload size={14} />
             )}
-            Upload from Device
+            <span>Upload from Device</span>
           </button>
         </div>
 
@@ -608,7 +608,7 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
                   )}
                 </div>
 
-                {/* Controls: Reorder Left/Right and Delete */}
+                {/* Controls: Reorder Left/Right and Delete (Touch-friendly 36px+ tap area) */}
                 <div className="flex items-center justify-between pt-1 text-xs">
                   <div className="flex items-center gap-1">
                     <button
@@ -616,18 +616,18 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
                       disabled={idx === 0}
                       onClick={() => handleMoveImage(idx, "left")}
                       title="Move left (higher priority)"
-                      className="p-1 rounded-lg bg-carbon hover:bg-neutral-800 disabled:opacity-30 text-ash hover:text-porcelain"
+                      className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-carbon hover:bg-neutral-800 disabled:opacity-30 text-ash hover:text-porcelain"
                     >
-                      <ChevronLeft size={14} />
+                      <ChevronLeft size={16} />
                     </button>
                     <button
                       type="button"
                       disabled={idx === images.length - 1}
                       onClick={() => handleMoveImage(idx, "right")}
                       title="Move right"
-                      className="p-1 rounded-lg bg-carbon hover:bg-neutral-800 disabled:opacity-30 text-ash hover:text-porcelain"
+                      className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-carbon hover:bg-neutral-800 disabled:opacity-30 text-ash hover:text-porcelain"
                     >
-                      <ChevronRight size={14} />
+                      <ChevronRight size={16} />
                     </button>
                   </div>
 
@@ -635,9 +635,9 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
                     type="button"
                     onClick={() => handleRemoveImage(idx)}
                     title="Remove image"
-                    className="p-1 rounded-lg bg-carbon hover:bg-red-950/40 text-ash hover:text-red-400 transition-colors"
+                    className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-carbon hover:bg-red-950/40 text-ash hover:text-red-400 transition-colors"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -915,21 +915,21 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-steel/20">
+      {/* Sticky Bottom Action Bar (§STEP 4) */}
+      <div className="sticky bottom-0 bg-carbon/95 backdrop-blur-md -mx-3.5 sm:-mx-6 -mb-3.5 sm:-mb-6 p-4 border-t border-steel/30 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] z-30 flex items-center justify-between gap-3 shadow-2xl">
         <Link
           href={`/${adminPath}/products`}
-          className="px-6 py-2.5 rounded-pill text-xs font-medium text-ash hover:text-porcelain transition-colors"
+          className="px-5 py-2.5 rounded-pill text-xs font-medium text-ash hover:text-porcelain transition-colors min-h-[44px] flex items-center"
         >
           Cancel
         </Link>
         <button
           type="submit"
           disabled={loading || uploading}
-          className="bg-apple-blue hover:bg-apple-blue/90 disabled:opacity-50 text-white font-medium text-xs px-8 py-2.5 rounded-pill transition-transform active:scale-95 flex items-center gap-2"
+          className="bg-apple-blue hover:bg-apple-blue/90 disabled:opacity-50 text-white font-semibold text-xs px-6 sm:px-8 py-2.5 rounded-pill transition-transform active:scale-95 flex items-center gap-2 min-h-[44px]"
         >
           {loading && <Loader2 size={14} className="animate-spin" />}
-          {isEditing ? "Save Changes" : "Publish Product"}
+          <span>{isEditing ? "Save Changes" : "Publish Product"}</span>
         </button>
       </div>
     </form>

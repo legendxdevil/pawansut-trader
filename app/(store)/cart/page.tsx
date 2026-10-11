@@ -60,16 +60,16 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 pb-32 lg:pb-8 space-y-8">
       <div className="flex items-center justify-between border-b border-steel/30 pb-4">
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Shopping Cart ({hydratedItems.length})
         </h1>
         <button
           onClick={clearCart}
-          className="text-xs text-ash hover:text-error transition-colors flex items-center gap-1"
+          className="text-xs text-ash hover:text-error transition-colors flex items-center gap-1.5 p-2 rounded-pill hover:bg-steel/20 min-h-[44px]"
         >
-          <Trash2 size={12} /> Clear all
+          <Trash2 size={14} /> Clear all
         </button>
       </div>
 
@@ -168,22 +168,22 @@ export default function CartPage() {
               </div>
 
               {/* Price & Stepper Row */}
-              <div className="flex items-center justify-between w-full sm:w-auto gap-6 sm:self-center border-t sm:border-t-0 border-steel/20 pt-3 sm:pt-0">
-                <div className="text-right">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-4 sm:gap-6 sm:self-center border-t sm:border-t-0 border-steel/20 pt-3 sm:pt-0">
+                <div className="text-left sm:text-right">
                   <p className="text-base font-semibold text-porcelain">
                     ₹{item.price * item.qty}
                   </p>
                   <p className="text-[11px] text-ash">₹{item.price} each</p>
                 </div>
 
-                {/* Stepper */}
+                {/* 44px Stepper (§STEP 2, STEP 3) */}
                 <div className="flex items-center bg-graphite border border-steel/50 rounded-pill p-1">
                   <button
                     onClick={() => updateQty(item.productId, item.variantId, item.qty - 1)}
                     aria-label="Decrease quantity"
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-ash hover:text-porcelain"
+                    className="w-10 h-10 min-w-[40px] min-h-[40px] sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-ash hover:text-porcelain"
                   >
-                    <Minus size={12} />
+                    <Minus size={14} />
                   </button>
                   <span className="w-8 text-center text-xs font-semibold text-porcelain">
                     {item.qty}
@@ -192,17 +192,17 @@ export default function CartPage() {
                     onClick={() => updateQty(item.productId, item.variantId, item.qty + 1)}
                     disabled={item.qty >= Math.min(10, item.availableStock)}
                     aria-label="Increase quantity"
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-ash hover:text-porcelain disabled:opacity-30"
+                    className="w-10 h-10 min-w-[40px] min-h-[40px] sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-ash hover:text-porcelain disabled:opacity-30"
                   >
-                    <Plus size={12} />
+                    <Plus size={14} />
                   </button>
                 </div>
 
-                {/* Remove button */}
+                {/* Remove button (44px tap target) */}
                 <button
                   onClick={() => removeItem(item.productId, item.variantId)}
                   aria-label="Remove item"
-                  className="text-ash hover:text-error transition-colors p-1"
+                  className="text-ash hover:text-error transition-colors p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-steel/20"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -228,11 +228,11 @@ export default function CartPage() {
                 placeholder="e.g. WELCOME10"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain text-xs px-3.5 py-2.5 rounded-pill border border-slate focus:border-apple-blue uppercase"
+                className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain text-base sm:text-xs px-3.5 py-2.5 rounded-pill border border-slate focus:border-apple-blue uppercase"
               />
               <button
                 type="submit"
-                className="bg-steel/60 hover:bg-steel text-porcelain text-xs font-medium px-4 py-2.5 rounded-pill transition-colors"
+                className="bg-steel/60 hover:bg-steel text-porcelain text-xs font-medium px-4 py-2.5 rounded-pill transition-colors min-h-[44px]"
               >
                 Apply
               </button>
@@ -266,7 +266,7 @@ export default function CartPage() {
             onClick={(e) => {
               if (hasStockIssue) e.preventDefault();
             }}
-            className={`w-full text-center text-sm font-medium py-3 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 ${
+            className={`w-full text-center text-sm font-medium py-3.5 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 min-h-[44px] ${
               hasStockIssue
                 ? "bg-steel/60 text-ash cursor-not-allowed"
                 : "bg-apple-blue hover:bg-apple-blue/90 text-white"
@@ -280,6 +280,28 @@ export default function CartPage() {
             Cash on Delivery (COD) available at Satyawadi Raja Harish Chandra Hospital.
           </p>
         </div>
+      </div>
+
+      {/* Sticky Mobile Checkout Bar (< lg) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-carbon/95 backdrop-blur-md border-t border-steel/30 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-35 flex items-center justify-between gap-3 shadow-2xl">
+        <div>
+          <span className="text-[10px] text-ash block uppercase font-semibold">Total</span>
+          <span className="text-base font-bold text-porcelain">₹{total}</span>
+        </div>
+        <Link
+          href={hasStockIssue ? "#" : "/checkout"}
+          onClick={(e) => {
+            if (hasStockIssue) e.preventDefault();
+          }}
+          className={`flex-1 text-center text-sm font-semibold py-3 px-4 rounded-pill transition-transform active:scale-[0.98] flex items-center justify-center gap-2 min-h-[44px] ${
+            hasStockIssue
+              ? "bg-steel/60 text-ash cursor-not-allowed"
+              : "bg-apple-blue hover:bg-apple-blue/90 text-white"
+          }`}
+        >
+          <span>Checkout (₹{total})</span>
+          <ArrowRight size={16} />
+        </Link>
       </div>
     </div>
   );

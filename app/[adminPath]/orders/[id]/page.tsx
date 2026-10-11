@@ -172,15 +172,15 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           {/* WhatsApp Notify Link */}
           <a
             href={whatsappNotificationLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-semibold px-4 py-2 rounded-pill flex items-center gap-1.5 transition-transform active:scale-95"
+            className="flex-1 sm:flex-initial bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-semibold px-4 py-2.5 rounded-pill flex items-center justify-center gap-1.5 transition-transform active:scale-95 min-h-[44px]"
           >
-            <MessageCircle size={14} className="fill-current" />
+            <MessageCircle size={16} className="fill-current" />
             <span>Notify Customer</span>
           </a>
 
@@ -188,9 +188,9 @@ export default function AdminOrderDetailPage() {
           <Link
             href={`/${adminPath}/orders/${order.id}/invoice`}
             target="_blank"
-            className="bg-carbon hover:bg-steel/40 text-porcelain border border-slate text-xs font-semibold px-4 py-2 rounded-pill flex items-center gap-1.5 transition-colors"
+            className="flex-1 sm:flex-initial bg-carbon hover:bg-steel/40 text-porcelain border border-slate text-xs font-semibold px-4 py-2.5 rounded-pill flex items-center justify-center gap-1.5 transition-colors min-h-[44px]"
           >
-            <Printer size={14} />
+            <Printer size={16} />
             <span>Invoice Bill</span>
           </Link>
         </div>
@@ -211,7 +211,7 @@ export default function AdminOrderDetailPage() {
       )}
 
       {/* Status & Operations Card */}
-      <div className="bg-carbon rounded-tile border border-steel/30 p-6 space-y-6">
+      <div className="bg-carbon rounded-tile border border-steel/30 p-5 sm:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-steel/20 pb-4">
           <div>
             <span className="text-xs text-ash uppercase font-semibold">Current Lifecycle Status</span>
@@ -220,13 +220,13 @@ export default function AdminOrderDetailPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {allowedTransitions.map((st) => (
               <button
                 key={st}
                 onClick={() => handleStatusTransition(st)}
                 disabled={actionLoading}
-                className={`text-xs font-semibold px-4 py-2 rounded-pill transition-transform active:scale-95 disabled:opacity-50 ${
+                className={`flex-1 sm:flex-initial text-xs font-semibold px-4 py-2.5 rounded-pill transition-transform active:scale-95 disabled:opacity-50 min-h-[44px] flex items-center justify-center ${
                   st === "cancelled"
                     ? "bg-error/20 text-error hover:bg-error/30"
                     : st === "delivered"
@@ -250,28 +250,28 @@ export default function AdminOrderDetailPage() {
             placeholder="e.g. Handed over to courier / Customer requested room delivery"
             value={transitionNote}
             onChange={(e) => setTransitionNote(e.target.value)}
-            className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs"
+            className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs placeholder:text-ash"
           />
         </div>
 
         {/* Payment Management & Warranty Card Action Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-steel/20 pt-4">
           {/* Payment */}
-          <div className="bg-graphite/60 rounded-tile p-4 border border-steel/20 space-y-2 text-xs">
+          <div className="bg-graphite/60 rounded-tile p-4 border border-steel/20 space-y-3 text-xs">
             <span className="text-ash uppercase font-semibold block">Payment Status</span>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-porcelain uppercase">{order.payment.method}</p>
                 <p className={`font-semibold ${order.payment.status === "paid" ? "text-success" : "text-warning"}`}>
                   Status: {order.payment.status.toUpperCase()}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 {order.payment.status !== "paid" && (
                   <button
                     onClick={() => handlePaymentStatus("paid")}
                     disabled={actionLoading}
-                    className="bg-success text-white text-[11px] font-semibold px-3 py-1 rounded-pill"
+                    className="bg-success text-white text-xs font-semibold px-4 py-2.5 rounded-pill min-h-[40px] flex items-center justify-center transition-transform active:scale-95"
                   >
                     Mark Paid
                   </button>
@@ -280,7 +280,7 @@ export default function AdminOrderDetailPage() {
                   <button
                     onClick={() => handlePaymentStatus("refunded")}
                     disabled={actionLoading}
-                    className="bg-steel/60 text-ash text-[11px] font-semibold px-3 py-1 rounded-pill"
+                    className="bg-steel/60 text-ash text-xs font-semibold px-4 py-2.5 rounded-pill min-h-[40px] flex items-center justify-center transition-transform active:scale-95"
                   >
                     Mark Refunded
                   </button>
@@ -290,9 +290,9 @@ export default function AdminOrderDetailPage() {
           </div>
 
           {/* Warranty Card Issue (§16) */}
-          <div className="bg-graphite/60 rounded-tile p-4 border border-steel/20 space-y-2 text-xs">
+          <div className="bg-graphite/60 rounded-tile p-4 border border-steel/20 space-y-3 text-xs">
             <span className="text-ash uppercase font-semibold block">Physical Warranty Cards</span>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className={`font-semibold ${order.warrantyCardIssued ? "text-success" : "text-optical-yellow"}`}>
                   {order.warrantyCardIssued ? "✓ Cards Issued" : "Pending Generation"}
@@ -302,21 +302,21 @@ export default function AdminOrderDetailPage() {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 {!order.warrantyCardIssued ? (
                   <button
                     onClick={handleIssueWarrantyCards}
                     disabled={actionLoading}
-                    className="bg-optical-yellow text-obsidian text-[11px] font-bold px-3 py-1.5 rounded-pill"
+                    className="bg-optical-yellow text-obsidian text-xs font-bold px-4 py-2.5 rounded-pill min-h-[40px] flex items-center justify-center transition-transform active:scale-95"
                   >
                     Generate Cards
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowPrintWarrantySheet(true)}
-                    className="bg-steel text-porcelain text-[11px] font-semibold px-3 py-1.5 rounded-pill flex items-center gap-1"
+                    className="bg-steel text-porcelain text-xs font-semibold px-4 py-2.5 rounded-pill flex items-center gap-1.5 min-h-[40px] justify-center transition-transform active:scale-95"
                   >
-                    <Printer size={12} />
+                    <Printer size={14} />
                     <span>Print Card Sheet</span>
                   </button>
                 )}

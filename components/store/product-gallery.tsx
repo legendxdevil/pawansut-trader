@@ -20,16 +20,48 @@ export function ProductGallery({
   const validImages = images && images.length > 0 ? images : [];
   const activeImage = validImages[selectedIndex] || validImages[0];
 
+  const handlePrev = () => {
+    if (validImages.length <= 1) return;
+    setSelectedIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+  };
+
+  const handleNext = () => {
+    if (validImages.length <= 1) return;
+    setSelectedIndex((prev) => (prev + 1) % validImages.length);
+  };
+
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (diff > 40) {
+      handleNext();
+    } else if (diff < -40) {
+      handlePrev();
+    }
+    setTouchStartX(null);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Main Image Tile (Pale White 28px Canvas per §5.4 & §7.4) */}
-      <div className="bg-white rounded-tile p-8 sm:p-12 flex items-center justify-center min-h-[380px] sm:min-h-[480px] relative overflow-hidden border border-steel/20 shadow-none">
+      {/* Main Image Tile (Pale White 28px Canvas with Touch Swipe per §5.4 & §7.4) */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="bg-white rounded-tile p-6 sm:p-12 flex items-center justify-center min-h-[300px] sm:min-h-[440px] relative overflow-hidden border border-steel/20 shadow-none touch-pan-y select-none"
+      >
         {activeImage ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={activeImage}
             alt={productName}
-            className="max-h-[380px] max-w-full object-contain mix-blend-multiply transition-all duration-300"
+            className="max-h-[320px] sm:max-h-[400px] max-w-full object-contain mix-blend-multiply transition-all duration-300"
             onError={(e) => {
               (e.target as HTMLElement).style.display = "none";
             }}
@@ -48,6 +80,12 @@ export function ProductGallery({
             <span className="bg-error text-white text-sm font-semibold px-4 py-2 rounded-pill">
               Out of Stock
             </span>
+          </div>
+        )}
+
+        {validImages.length > 1 && (
+          <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-mono px-2 py-0.5 rounded-full">
+            {selectedIndex + 1}/{validImages.length}
           </div>
         )}
       </div>
