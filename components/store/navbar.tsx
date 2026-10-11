@@ -1,12 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingBag, Heart, Search, Menu, X, Smartphone } from "lucide-react";
 import { STORE_CONFIG } from "@/lib/store-config";
+import { useCart } from "@/lib/cart-context";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const { itemCount, openDrawer } = useCart();
+
+  useEffect(() => {
+    const updateCount = () => {
+      try {
+        const stored = localStorage.getItem(STORE_CONFIG.wishlistStorageKey);
+        if (stored) {
+          const ids: string[] = JSON.parse(stored);
+          setWishlistCount(ids.length);
+        } else {
+          setWishlistCount(0);
+        }
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+
+    updateCount();
+    window.addEventListener("pt_wishlist_updated", updateCount);
+    window.addEventListener("storage", updateCount);
+    return () => {
+      window.removeEventListener("pt_wishlist_updated", updateCount);
+      window.removeEventListener("storage", updateCount);
+    };
+  }, []);
 
   return (
     <nav className="bg-obsidian border-b border-steel/30 sticky top-0 z-40 h-[44px] flex items-center px-4 transition-colors">
@@ -52,10 +79,24 @@ export function Navbar() {
           </Link>
           <Link href="/wishlist" aria-label="Wishlist" className="hover:text-porcelain transition-colors relative">
             <Heart size={16} />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-error text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {wishlistCount}
+              </span>
+            )}
           </Link>
-          <Link href="/cart" aria-label="Shopping Cart" className="hover:text-porcelain transition-colors relative">
+          <button
+            onClick={openDrawer}
+            aria-label="Open Shopping Bag"
+            className="hover:text-porcelain transition-colors relative"
+          >
             <ShoppingBag size={16} />
-          </Link>
+            {itemCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-apple-blue text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {itemCount}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden text-[#cccccc] hover:text-porcelain"

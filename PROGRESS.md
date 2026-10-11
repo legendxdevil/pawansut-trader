@@ -87,5 +87,25 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Invalid slug triggers notFound() / 404
   - [x] SEO metadata & JSON-LD (Product & Store) included
   - [x] Strict TypeScript and ESLint compliance verified
+## Phase 3: Cart & Wishlist
+- **Status**: done
+- **Spec sections**: §5.6, §7.5, §7.6, §7.10, §19 (Phase 3)
+- **Files added/changed**:
+  - `lib/delivery.ts`: authoritative delivery calculation rule per §7.10
+  - `app/api/cart/resolve/route.ts`: Node runtime route handler returning server-authoritative line prices, stock validation, and delivery rules
+  - `lib/cart-context.tsx`: React CartContext with `localStorage` (`pt_cart_v1`), server re-fetching, and cross-tab/cross-component sync
+  - `components/store/mini-cart-drawer.tsx`: animated slide-in drawer with Framer Motion, quantity steppers, and free-delivery nudge
+  - `components/store/navbar.tsx`: connected live cart count badge and wishlist count badge
+  - `app/(store)/layout.tsx`: wrapped with CartProvider and MiniCartDrawer
+  - `app/(store)/cart/page.tsx`: full cart view with line items, coupon preview input, delivery nudge, and checkout gate
+  - `app/(store)/wishlist/page.tsx`: saved items management with move-to-cart and remove
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all static & dynamic routes compiled
+- **Acceptance checks**:
+  - [x] Cart persists in `localStorage` (`pt_cart_v1`) across reloads
+  - [x] Client prices in storage are ignored; authoritative prices re-fetched from server via `/api/cart/resolve`
+  - [x] Free delivery threshold nudge ("Add ₹X more for free delivery") displays correctly
+  - [x] Items exceeding inventory show warning and block checkout
+  - [x] Wishlist persists in `localStorage` (`pt_wishlist_v1`) with add-to-cart flow
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
