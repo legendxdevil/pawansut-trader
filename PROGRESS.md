@@ -107,5 +107,29 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Free delivery threshold nudge ("Add ₹X more for free delivery") displays correctly
   - [x] Items exceeding inventory show warning and block checkout
   - [x] Wishlist persists in `localStorage` (`pt_wishlist_v1`) with add-to-cart flow
+## Phase 4: Checkout & Orders (COD)
+- **Status**: done
+- **Spec sections**: §7.7, §7.8, §7.9, §7.10, §8.1, §8.2, §9, §11, §12.4, §13, §19 (Phase 4), Appendix B
+- **Files added/changed**:
+  - `lib/validation/checkout.ts`: zod validation schema for guest checkout per §7.7
+  - `lib/validation/coupon.ts`: zod schema for coupon code validation
+  - `lib/payments/index.ts`: payment gateway abstraction with `isOnlinePaymentEnabled()`
+  - `lib/whatsapp.ts`: WhatsApp order template matching exact Appendix B specifications
+  - `app/api/coupons/validate/route.ts`: API route for coupon validation and discount computation
+  - `app/api/orders/create/route.ts`: Node runtime order creation handler with database pricing authority, stock decrement, customer record upsert, and honeypot rejection
+  - `app/api/track/route.ts`: order lookup requiring matching Order ID and 10-digit mobile number
+  - `app/(store)/checkout/page.tsx`: guest checkout with non-digit stripping on phone, hospital delivery confirmation checkbox, and inline error focus
+  - `app/(store)/order-success/[id]/page.tsx`: confirmation page with formatted WhatsApp template and direct WhatsApp launch button
+  - `app/(store)/track/page.tsx`: 5-phase timeline tracking page
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all 15 routes compiled successfully
+- **Acceptance checks**:
+  - [x] COD order creates document, snapshots warranty info, decrements stock, and assigns `PT-000001` ID sequence
+  - [x] Client-side price tampering completely rejected (prices computed authoritatively on server)
+  - [x] Phone input strips non-digits and prevents alphabetical characters
+  - [x] Honeypot field silently rejects automated bot submissions
+  - [x] WhatsApp message matches Appendix B format exactly
+  - [x] Order tracking securely gated by matching Order ID + mobile number
+  - [x] Online payment mode remains disabled with "Coming Soon" note pending Phase 9
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
