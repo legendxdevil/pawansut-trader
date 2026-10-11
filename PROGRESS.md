@@ -162,3 +162,33 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Robots exclusion headers configured for administrative segment
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
+
+## Phase 6: Admin Orders, Customers, Coupons
+- **Status**: done
+- **Spec sections**: §8.1, §8.2, §10.1, §10.2, §10.3, §11, §16, §19 (Phase 6)
+- **Files added/changed**:
+  - `app/api/admin/orders/route.ts`: Node runtime route returning all orders filtered by status or search
+  - `app/api/admin/orders/[id]/status/route.ts`: transitions order status using `canTransitionStatus`, restores stock on cancellation, appends status history with admin note
+  - `app/api/admin/orders/[id]/payment/route.ts`: marks COD payment as paid/unpaid
+  - `app/api/admin/orders/[id]/warranty-card/route.ts`: generates sequential warranty cards `PT-W-0001` with atomic counter and updates order item
+  - `app/api/admin/export/orders/route.ts`: RFC 4180 compliant CSV export for orders with customer and line item details
+  - `app/api/admin/coupons/route.ts`: CRUD for coupon codes with max discount and usage limits
+  - `app/api/admin/customers/route.ts`: customer list with order counts, spent totals, and addresses
+  - `app/[adminPath]/orders/page.tsx`: orders management table with status filtering, search, and integrated warranty claim lookup tool (§16)
+  - `app/[adminPath]/orders/[id]/page.tsx`: order detail view with status flow buttons, optional transition note, payment toggle, warranty card issuance modal, and customer WhatsApp link
+  - `app/[adminPath]/orders/[id]/invoice/page.tsx`: print-friendly invoice matching §11 with seller address, line items, and Open Item 7 GST disclaimer placeholder
+  - `app/[adminPath]/customers/page.tsx`: customer directory view
+  - `app/[adminPath]/coupons/page.tsx`: coupon management interface
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all 24 routes compiled successfully (0 errors, 0 warnings)
+- **Acceptance checks**:
+  - [x] Admin orders view displays complete order list with status filter and search query
+  - [x] Status transition enforces strict state machine rules (`canTransitionStatus`), decrements/restores stock accordingly, and records history
+  - [x] Payment status toggle allows marking COD orders as paid/unpaid
+  - [x] Printable invoice renders clean layout with print media styles, line items, and store details
+  - [x] Sequential warranty card generation (`PT-W-0001` format) issues cards, updates items, and displays printable slip
+  - [x] Claim lookup tool allows instant verification of warranty validity by card number or order ID
+  - [x] RFC 4180 CSV export generates compliant downloadable file
+  - [x] Customers and Coupons management interfaces operational
+- **Spec deviations**: None.
+- **Open items / TODO(verify)**: None.
