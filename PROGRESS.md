@@ -192,3 +192,40 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Customers and Coupons management interfaces operational
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
+
+## Phase 7: Policies, SEO, Reviews, Content Polish
+- **Status**: done
+- **Spec sections**: §7.9, §7.11, §14, §15, §19 (Phase 7), Appendix A
+- **Files added/changed**:
+  - `content/policies/privacy-policy.md`: seeded from Appendix A1 with placeholders
+  - `content/policies/terms-and-conditions.md`: seeded from Appendix A2 with hospital delivery notes
+  - `content/policies/refund-and-warranty-policy.md`: seeded from Appendix A3 with mandatory physical card terms
+  - `content/policies/cookies-policy.md`: seeded from Appendix A4 with essential keys list
+  - `components/store/policy-container.tsx`: reusable Apple dark styled policy layout
+  - `app/(store)/privacy-policy/page.tsx`: public Privacy Policy route with SEO metadata and grievance contact
+  - `app/(store)/terms-and-conditions/page.tsx`: public Terms & Conditions route with hospital zone
+  - `app/(store)/refund-and-warranty-policy/page.tsx`: public Refund & Warranty Policy route with card highlights
+  - `app/(store)/cookies-policy/page.tsx`: public Cookies Policy route with table of storage keys
+  - `components/store/cookie-notice.tsx`: bottom banner for essential storage with `pt_cookie_ok` localStorage persistence
+  - `app/(store)/contact/page.tsx`: public Contact page with direct WhatsApp link (+91 8505856763), hospital zone information, and support placeholders
+  - `app/robots.ts`: dynamically generates robots.txt allowing `/`, disallowing `/api/`, `/cart`, `/checkout`, `/order-success/`, `/track`, linking sitemap, completely hiding admin path
+  - `app/sitemap.ts`: dynamic sitemap generator indexing home, products, categories, contact, and policy pages while excluding admin and checkout
+  - `lib/validation/review.ts`: zod validation schema for customer review submissions
+  - `lib/data/reviews.ts`: server data layer querying approved reviews with graceful fallback
+  - `app/api/reviews/create/route.ts`: Node runtime route strictly requiring delivered Order ID + phone match and checking one review per order item
+  - `app/api/admin/reviews/route.ts`: Node runtime route returning all reviews for moderation
+  - `app/api/admin/reviews/[id]/route.ts`: Node runtime route handling review approval toggle and deletion
+  - `app/[adminPath]/reviews/page.tsx`: admin moderation dashboard for customer reviews
+  - `components/store/product-reviews.tsx`: verified reviews display, star ratings breakdown, and verified review submission modal
+  - `app/(store)/products/[slug]/page.tsx`: integrated ProductReviews component and added WhatsApp OG preview caching documentation
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all 33 routes and metadata endpoints compiled successfully (0 errors, 0 warnings)
+- **Acceptance checks**:
+  - [x] Sitemap dynamically lists all active products and categories, completely excludes admin path
+  - [x] Robots.txt disallows sensitive paths and does not reveal the secret admin path
+  - [x] Unverified reviews impossible: API strictly enforces delivered status, customer phone match, product match, and one review per item
+  - [x] Four policy pages (Appendix A) active with prominent owner placeholders
+  - [x] Cookie notice banner active with `pt_cookie_ok` persistence
+  - [x] Contact page active with direct WhatsApp link
+- **Spec deviations**: None.
+- **Open items / TODO(verify)**: None.

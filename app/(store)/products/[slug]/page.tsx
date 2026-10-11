@@ -4,7 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getProductBySlug } from "@/lib/data/products";
+import { getApprovedReviews } from "@/lib/data/reviews";
 import { ProductInteractiveSection } from "@/components/store/product-interactive-section";
+import { ProductReviews } from "@/components/store/product-reviews";
 import { STORE_CONFIG } from "@/lib/store-config";
 
 interface ProductPageProps {
@@ -19,6 +21,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     };
   }
 
+  // Note: WhatsApp caches previews aggressively. Ensure og:image is absolute and under 300KB (spec §14).
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const ogImage = product.images?.[0]
     ? product.images[0].startsWith("http")
@@ -59,6 +62,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound(); // Acceptance criteria: invalid slug -> 404
   }
 
+  const reviews = await getApprovedReviews(product.id);
   const totalStock = product.variants.reduce((acc, v) => acc + (v.stock || 0), 0);
 
   const jsonLd = {
@@ -199,6 +203,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
           )}
         </div>
       </div>
+
+      {/* Verified Reviews Section (§7.9, §19 Phase 7) */}
+      <ProductReviews
+        productId={product.id}
+        productName={product.name}
+        initialReviews={reviews}
+      />
     </div>
   );
 }
