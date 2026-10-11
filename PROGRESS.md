@@ -57,5 +57,35 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] Security rules and index specifications written
   - [x] No secrets committed (.env ignored, .env.example with placeholders)
   - [x] Tokens render cleanly on /scratch page
+## Phase 2: Public Catalog
+- **Status**: done
+- **Spec sections**: §6, §7.1, §7.2, §7.3, §7.4, §14, §19 (Phase 2), Appendix B, Appendix C
+- **Files added/changed**:
+  - `scripts/seed-data.ts`: canonical sample seed dataset with `// SAMPLE DATA` markers
+  - `scripts/seed.mjs`: Firestore seed script
+  - `lib/data/products.ts`: server data layer with filter, search, sort, and fallback
+  - `lib/data/categories.ts`: category queries
+  - `lib/data/announcements.ts`: announcement query
+  - `lib/data/settings.ts`: store settings query
+  - `components/store/announcement-strip.tsx`: 4s auto-carousel with Framer Motion, pause on hover/focus
+  - `components/store/navbar.tsx`: 44px global dark navigation bar
+  - `components/store/footer.tsx`: store policies, contact, and legal links
+  - `components/store/whatsapp-button.tsx`: floating WhatsApp chat action
+  - `components/store/product-card.tsx`: 28px white image tile, price capsule, badges
+  - `components/store/catalog-view.tsx`: responsive search, category pills, in-stock toggle, and sort
+  - `components/store/product-interactive-section.tsx`: variant selector, price override, stock bounds, qty stepper
+  - `app/(store)/layout.tsx`: store layout with server-rendered announcements
+  - `app/(store)/page.tsx`: home page with hero stage, categories, new arrivals, featured gear
+  - `app/(store)/products/page.tsx`: full catalog page with SEO metadata
+  - `app/(store)/products/[slug]/page.tsx`: product detail page, specs table, warranty note, JSON-LD, 404 on invalid slug
+  - `app/(store)/category/[slug]/page.tsx`: dynamic category listings
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all dynamic routes compiled
+- **Acceptance checks**:
+  - [x] Seeded products render across Home, Catalog, and Category pages
+  - [x] Variant selection updates price override and stock status dynamically
+  - [x] Invalid slug triggers notFound() / 404
+  - [x] SEO metadata & JSON-LD (Product & Store) included
+  - [x] Strict TypeScript and ESLint compliance verified
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
