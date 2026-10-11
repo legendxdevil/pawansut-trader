@@ -46,8 +46,8 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
         storeName={STORE_CONFIG.storeName}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Content Area: Offset for fixed top navbar (h-14) and fixed desktop sidebar (w-64) */}
+      <div className="flex-1 flex flex-col min-w-0 pt-14 lg:pl-64">
         <main className="flex-1 p-3.5 sm:p-6 lg:p-10 max-w-7xl w-full mx-auto pb-16 lg:pb-10">
           {children}
         </main>

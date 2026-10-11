@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { adminDb } from "@/lib/firebase-admin";
-import { SAMPLE_BANNERS } from "@/scripts/seed-data";
 import type { Banner } from "@/types";
 
 export const runtime = "nodejs";
@@ -26,8 +25,6 @@ export async function GET() {
 
     if (!snap.empty) {
       banners = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
-    } else {
-      banners = [...SAMPLE_BANNERS];
     }
 
     return NextResponse.json({ data: banners });

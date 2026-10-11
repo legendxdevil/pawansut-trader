@@ -1,11 +1,9 @@
 import { adminDb } from "@/lib/firebase-admin";
 import type { Banner } from "@/types";
-import { SAMPLE_BANNERS } from "@/scripts/seed-data";
 
 /**
  * Server data layer for hero banners.
- * Reads active banners from Firestore 'banners' collection,
- * falling back to canonical sample dataset if uninitialized or offline.
+ * Reads active banners from Firestore 'banners' collection.
  */
 export async function getActiveBanners(): Promise<Banner[]> {
   try {
@@ -18,9 +16,9 @@ export async function getActiveBanners(): Promise<Banner[]> {
     if (!snap.empty) {
       return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
     }
-    return SAMPLE_BANNERS.filter((b) => b.isActive);
+    return [];
   } catch {
-    return SAMPLE_BANNERS.filter((b) => b.isActive);
+    return [];
   }
 }
 
@@ -34,9 +32,9 @@ export async function getAllBanners(): Promise<Banner[]> {
     if (!snap.empty) {
       return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
     }
-    return [...SAMPLE_BANNERS];
+    return [];
   } catch {
-    return [...SAMPLE_BANNERS];
+    return [];
   }
 }
 
@@ -46,8 +44,8 @@ export async function getBannerById(id: string): Promise<Banner | null> {
     if (doc.exists) {
       return { id: doc.id, ...doc.data() } as Banner;
     }
-    return SAMPLE_BANNERS.find((b) => b.id === id) || null;
+    return null;
   } catch {
-    return SAMPLE_BANNERS.find((b) => b.id === id) || null;
+    return null;
   }
 }

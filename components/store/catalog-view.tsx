@@ -245,23 +245,33 @@ export function CatalogView({
           ))}
         </div>
       ) : (
-        <div className="bg-carbon/50 rounded-tile border border-steel/20 p-8 sm:p-12 text-center space-y-3">
-          <Filter size={32} className="mx-auto text-ash/60" />
-          <h3 className="text-base sm:text-lg font-semibold text-porcelain">No products found</h3>
-          <p className="text-ash text-xs max-w-sm mx-auto">
-            Try adjusting your search query, selecting another category, or unchecking &quot;In stock only&quot;.
-          </p>
-          <button
-            onClick={() => {
-              setSearchTerm("");
-              setSelectedCategory("all");
-              setOnlyInStock(false);
-              setSortBy("newest");
-            }}
-            className="bg-steel/50 hover:bg-steel text-porcelain text-xs px-5 py-2.5 rounded-pill font-medium min-h-[44px]"
-          >
-            Reset Filters
-          </button>
+        <div className="bg-carbon/50 rounded-tile border border-steel/20 p-8 sm:p-14 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-steel/30 flex items-center justify-center mx-auto text-ash">
+            <Filter size={24} />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base sm:text-lg font-semibold text-porcelain">
+              {initialProducts.length === 0 ? "Products Coming Soon" : "No products found"}
+            </h3>
+            <p className="text-ash text-xs max-w-sm mx-auto leading-relaxed">
+              {initialProducts.length === 0
+                ? "Our catalog is being stocked with authentic, premium accessories. Products added from the Admin Panel will appear here live."
+                : "Try adjusting your search query, selecting another category, or unchecking 'In stock only'."}
+            </p>
+          </div>
+          {initialProducts.length > 0 && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedCategory("all");
+                setOnlyInStock(false);
+                setSortBy("newest");
+              }}
+              className="bg-steel/50 hover:bg-steel text-porcelain text-xs px-5 py-2.5 rounded-pill font-medium min-h-[44px]"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       )}
 

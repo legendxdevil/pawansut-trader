@@ -65,8 +65,8 @@ export function AdminNav({ adminPath, sessionEmail, storeName }: AdminNavProps) 
 
   return (
     <>
-      {/* Mobile Top Header (< lg) */}
-      <header className="lg:hidden h-14 bg-carbon/95 backdrop-blur-md border-b border-steel/30 px-4 flex items-center justify-between sticky top-0 z-30">
+      {/* Mobile Top Header (< lg) - Fixed and permanently pinned on scroll */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-carbon/95 backdrop-blur-md border-b border-steel/30 px-4 flex items-center justify-between z-40">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -182,8 +182,8 @@ export function AdminNav({ adminPath, sessionEmail, storeName }: AdminNavProps) 
         </div>
       )}
 
-      {/* Desktop Sidebar (lg+) */}
-      <aside className="w-64 bg-carbon border-r border-steel/30 flex-col justify-between hidden lg:flex shrink-0 min-h-screen sticky top-0 h-screen overflow-y-auto">
+      {/* Desktop Sidebar (lg+) - Fixed and permanently pinned on scroll */}
+      <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-64 h-screen bg-carbon border-r border-steel/30 flex-col justify-between shrink-0 z-40 overflow-y-auto">
         <div className="p-6 space-y-6">
           <div className="space-y-1">
             <h1 className="font-bold text-sm tracking-tight text-porcelain">
@@ -243,6 +243,42 @@ export function AdminNav({ adminPath, sessionEmail, storeName }: AdminNavProps) 
           </div>
         </div>
       </aside>
+
+      {/* Desktop Top Header (lg+) - Fixed and permanently pinned on scroll */}
+      <header className="hidden lg:flex fixed top-0 left-64 right-0 h-14 bg-carbon/95 backdrop-blur-md border-b border-steel/30 px-6 items-center justify-between z-30">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-sm text-porcelain">
+            {navItems.find((item) => pathname === item.href || pathname?.startsWith(item.href + "/"))?.label || "Dashboard"}
+          </span>
+          <span className="text-[10px] text-apple-blue font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-apple-blue/10 border border-apple-blue/20">
+            Admin Center
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4 text-xs">
+          <Link
+            href="/"
+            target="_blank"
+            className="text-electric-link hover:underline flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-steel/20 hover:bg-steel/30 transition-colors"
+          >
+            <span>Live Store</span>
+            <ExternalLink size={12} />
+          </Link>
+
+          <div className="text-ash flex items-center gap-2 border-l border-steel/30 pl-4">
+            <span className="text-porcelain/90 font-medium truncate max-w-[220px]">{sessionEmail}</span>
+            <form action="/api/admin/session" method="DELETE">
+              <button
+                type="submit"
+                className="text-xs text-ash hover:text-error flex items-center gap-1 p-1.5 hover:bg-error/10 rounded-full transition-colors"
+                title="Sign out"
+              >
+                <LogOut size={14} />
+              </button>
+            </form>
+          </div>
+        </div>
+      </header>
     </>
   );
 }

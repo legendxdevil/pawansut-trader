@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { adminDb } from "@/lib/firebase-admin";
-import { SAMPLE_COUPON } from "@/scripts/seed-data";
 import type { Coupon } from "@/types";
 
 export const runtime = "nodejs";
@@ -29,8 +28,6 @@ export async function GET() {
 
     if (!snap.empty) {
       list = snap.docs.map((d) => ({ code: d.id, ...d.data() } as Coupon));
-    } else {
-      list = [SAMPLE_COUPON];
     }
 
     return NextResponse.json({ data: list });

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { couponValidateSchema } from "@/lib/validation/coupon";
 import { adminDb } from "@/lib/firebase-admin";
 import type { Coupon } from "@/types";
-import { SAMPLE_COUPON } from "@/scripts/seed-data";
 
 export const runtime = "nodejs";
 
@@ -35,12 +34,7 @@ export async function POST(req: Request) {
         coupon = doc.data() as Coupon;
       }
     } catch {
-      // Fallback
-    }
-
-    // Check sample coupon fallback if not in Firestore
-    if (!coupon && normalizedCode === SAMPLE_COUPON.code) {
-      coupon = SAMPLE_COUPON;
+      // Not found or error
     }
 
     if (!coupon) {
