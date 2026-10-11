@@ -131,5 +131,34 @@ Project build log per phase, tracking status, acceptance checks, command outcome
   - [x] WhatsApp message matches Appendix B format exactly
   - [x] Order tracking securely gated by matching Order ID + mobile number
   - [x] Online payment mode remains disabled with "Coming Soon" note pending Phase 9
+## Phase 5: Admin Foundation & Catalog Management
+- **Status**: done
+- **Spec sections**: §3.3, §3.4, §6, §11, §12.1, §12.3, §16, §19 (Phase 5)
+- **Files added/changed**:
+  - `lib/auth/require-admin.ts`: session verification helper ensuring `claims.admin === true`
+  - `scripts/set-admin.mjs`: administrative script to grant `admin: true` custom claim to target email
+  - `app/api/admin/session/route.ts`: session creation and deletion endpoints with secure httpOnly cookie
+  - `app/[adminPath]/layout.tsx`: dynamic segment route guard checking `ADMIN_PATH` and enforcing `noindex, nofollow`
+  - `app/[adminPath]/login/page.tsx`: admin login interface with Firebase Auth client SDK
+  - `app/[adminPath]/dashboard/page.tsx`: administrative metrics and section links
+  - `app/[adminPath]/products/page.tsx`: catalog inventory table with warranty, stock, and pricing status
+  - `app/[adminPath]/products/new/page.tsx`: product creation interface
+  - `app/[adminPath]/products/[id]/page.tsx`: product modification interface
+  - `components/admin/product-form.tsx`: comprehensive form supporting variants, specs, and warranty settings
+  - `app/[adminPath]/categories/page.tsx`: category management
+  - `app/[adminPath]/announcements/page.tsx`: carousel announcement management
+  - `app/[adminPath]/settings/page.tsx`: store settings and hospital delivery restriction toggle
+  - `app/api/admin/products/route.ts` & `app/api/admin/products/[id]/route.ts`: CRUD with cache revalidation
+  - `app/api/admin/categories/route.ts`: category CRUD
+  - `app/api/admin/announcements/route.ts`: announcement CRUD
+  - `app/api/admin/settings/route.ts`: store configuration updates
+- **Commands run**:
+  - `npx tsc --noEmit && npm run lint && npm run build` -> clean, all 20 routes compiled successfully
+- **Acceptance checks**:
+  - [x] Secret admin path segment checked dynamically; mismatch triggers `notFound()`
+  - [x] Non-admin accounts lacking `admin: true` claim are rejected at session creation
+  - [x] Product creation/updates call `revalidatePath` across catalog, home, category, and detail pages
+  - [x] Category, announcement, and settings management operational
+  - [x] Robots exclusion headers configured for administrative segment
 - **Spec deviations**: None.
 - **Open items / TODO(verify)**: None.
