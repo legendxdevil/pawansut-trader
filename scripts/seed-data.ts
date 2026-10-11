@@ -2,17 +2,50 @@
 // This file provides the canonical initial seed dataset for Pawansut Trader.
 // All items are clearly flagged as sample data and will be replaced or managed via admin.
 
-import type { Product, Category, Announcement, StoreSettings, Coupon } from "@/types";
+import type { Product, Category, Announcement, StoreSettings, Coupon, Banner } from "@/types";
 
 export const SAMPLE_CATEGORIES: Category[] = [
-  { id: "cat-chargers", name: "Chargers & Adapters", slug: "chargers-adapters", order: 1 },
-  { id: "cat-cables", name: "Cables", slug: "cables", order: 2 },
-  { id: "cat-audio", name: "Earphones & Headphones", slug: "earphones-headphones", order: 3 },
-  { id: "cat-powerbanks", name: "Power Banks", slug: "power-banks", order: 4 },
-  { id: "cat-cases", name: "Phone Cases & Covers", slug: "cases-covers", order: 5 },
-  { id: "cat-screen", name: "Screen Protectors", slug: "screen-protectors", order: 6 },
-  { id: "cat-stands", name: "Holders & Stands", slug: "holders-stands", order: 7 },
-  { id: "cat-storage", name: "Memory Cards & Storage", slug: "memory-storage", order: 8 },
+  { id: "cat-chargers", name: "Chargers & Adapters", slug: "chargers-adapters", icon: "Zap", order: 1 },
+  { id: "cat-cables", name: "Cables", slug: "cables", icon: "Cable", order: 2 },
+  { id: "cat-audio", name: "Earphones & Headphones", slug: "earphones-headphones", icon: "Headphones", order: 3 },
+  { id: "cat-powerbanks", name: "Power Banks", slug: "power-banks", icon: "BatteryCharging", order: 4 },
+  { id: "cat-cases", name: "Phone Cases & Covers", slug: "cases-covers", icon: "Smartphone", order: 5 },
+  { id: "cat-screen", name: "Screen Protectors", slug: "screen-protectors", icon: "ShieldCheck", order: 6 },
+  { id: "cat-stands", name: "Holders & Stands", slug: "holders-stands", icon: "Dock", order: 7 },
+  { id: "cat-storage", name: "Memory Cards & Storage", slug: "memory-storage", icon: "HardDrive", order: 8 },
+];
+
+export const SAMPLE_BANNERS: Banner[] = [
+  {
+    id: "banner-1",
+    imageUrl: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=1920&q=80",
+    mobileImageUrl: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=1080&q=80",
+    alt: "High-Speed GaN Chargers & Braided Kevlar Cables",
+    link: "/category/chargers-adapters",
+    isActive: true,
+    order: 1,
+    createdAt: 1710000000000,
+  },
+  {
+    id: "banner-2",
+    imageUrl: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=1920&q=80",
+    mobileImageUrl: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=1080&q=80",
+    alt: "Studio Acoustics & Noise Isolating Wireless Audio",
+    link: "/category/earphones-headphones",
+    isActive: true,
+    order: 2,
+    createdAt: 1710000100000,
+  },
+  {
+    id: "banner-3",
+    imageUrl: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1920&q=80",
+    mobileImageUrl: "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?auto=format&fit=crop&w=1080&q=80",
+    alt: "High Capacity Fast Charge Power Banks",
+    link: "/category/power-banks",
+    isActive: true,
+    order: 3,
+    createdAt: 1710000200000,
+  },
 ];
 
 export const SAMPLE_ANNOUNCEMENTS: Announcement[] = [

@@ -50,8 +50,8 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="bg-obsidian/95 backdrop-blur-md border-b border-steel/30 sticky top-0 z-30 h-[44px] flex items-center px-3 sm:px-4 transition-colors">
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+      <nav className="bg-obsidian/95 backdrop-blur-md border-b border-steel/30 sticky top-0 z-30 h-[44px] flex items-center px-4 md:px-6 lg:px-8 transition-colors">
+        <div className="max-w-[1440px] mx-auto w-full flex items-center justify-between">
           {/* Brand */}
           <Link
             href="/"

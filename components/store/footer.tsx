@@ -6,8 +6,8 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-graphite border-t border-steel/30 text-ash text-sm py-12 px-4 mt-20 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-12">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <footer className="bg-graphite border-t border-steel/30 text-ash text-sm py-12 px-4 md:px-6 lg:px-8 mt-20 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-12">
+      <div className="max-w-[1440px] mx-auto space-y-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand Info */}
           <div className="space-y-3">

@@ -19,6 +19,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  Images,
 } from "lucide-react";
 
 interface AdminNavProps {
@@ -52,6 +53,7 @@ export function AdminNav({ adminPath, sessionEmail, storeName }: AdminNavProps) 
     { label: "Dashboard", href: `/${adminPath}/dashboard`, icon: LayoutDashboard },
     { label: "Products", href: `/${adminPath}/products`, icon: Package },
     { label: "Categories", href: `/${adminPath}/categories`, icon: Layers },
+    { label: "Banners", href: `/${adminPath}/banners`, icon: Images },
     { label: "Orders", href: `/${adminPath}/orders`, icon: ShoppingBag },
     { label: "Customers", href: `/${adminPath}/customers`, icon: Users },
     { label: "Coupons", href: `/${adminPath}/coupons`, icon: Tag },

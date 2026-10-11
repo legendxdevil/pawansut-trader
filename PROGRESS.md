@@ -345,5 +345,43 @@ Project build log per phase, tracking status, acceptance checks, command outcome
 - `TODO(verify)`: Real phone on local Wi-Fi test: With the dev server running on `0.0.0.0:3000`, open `http://<LOCAL_LAN_IP>:3000` on a physical iOS (iPhone) and Android device to physically verify touch ergonomics, swipe smoothness, safe-area clearance on devices with a notch/dynamic island/home indicator, and on-screen keyboard behavior during checkout.
 - `TODO(verify)`: Mobile Lighthouse audit: In an environment with Chromium or Chrome binaries available, run mobile Lighthouse audits (`npx lighthouse http://localhost:3000 --form-factor=mobile --view`) on `/`, `/products/fast-charging-cable-65w`, and `/checkout` to record Performance, Accessibility, Best Practices, and SEO scores.
 
+## Home Page Redesign & Admin-Managed Hero Slider
+- **Status**: done
+- **Spec sections**: §5, §6, §7.2, §10, §11, §17, §20
+- **Files added/changed**:
+  - `components/store/hero-slider.tsx`: full-bleed interactive picture carousel (100% width, no margins), autoplay every ~5s, loop, pause on hover/focus/touch, swipe gestures, 44px dots, desktop arrows, keyboard accessibility, reduced motion support, art-directed `<picture>` loading with `getImageProps` preventing dual asset downloads. If 1 active banner: no controls/autoplay; if 0 active banners: renders nothing.
+  - `components/store/hero-info-strip.tsx`: slim one-line delivery & warranty notice below hero slider dynamically reading `freeDeliveryAbove` and `deliveryCharge` from `StoreSettings` (no boxes).
+  - `components/store/category-icon.tsx`: centralized icon component with allowlist of 13 verified Lucide icons (`Zap`, `PlugZap`, `Cable`, `Headphones`, `BatteryCharging`, `Smartphone`, `ShieldCheck`, `MemoryStick`, `HardDrive`, `Watch`, `Speaker`, `Dock`, `Package`).
+  - `components/store/category-row.tsx`: clean category navigation without boxes, borders, or background cards; ash icon (`#86868b`, hover `#2997ff`) with porcelain name (`#f5f5f7`) below; single scroll-snap row on mobile, centered row on desktop.
+  - `app/(store)/page.tsx`: redesigned home page layout with full-bleed hero slider, slim info strip, clean category row, and "All Mobile Accessories" `CatalogView` inside a single shared `max-w-[1440px]` container (`px-4 md:px-6 lg:px-8`). Removed "Fresh Stock" and "Featured Gear" sections.
+  - `lib/data/banners.ts`: server data layer with `getActiveBanners()`, `getAllBanners()`, and `getBannerById()` with fallback to `SAMPLE_BANNERS`.
+  - `app/api/admin/banners/route.ts` & `app/api/admin/banners/[id]/route.ts`: Node runtime Route Handlers behind `requireAdmin` with Zod validation, CRUD, reordering, and `revalidatePath('/')`.
+  - `app/[adminPath]/banners/page.tsx`: administrative banner management interface featuring image upload via ImgBB flow, desktop/mobile URL fields, recommended size hints (1920x720, 1080x1080), live dual-viewport preview, reorder up/down controls, and active toggles.
+  - `app/[adminPath]/categories/page.tsx`: added visual icon picker and active icon indicator for category taxonomy.
+  - `app/api/admin/categories/route.ts`: updated category Zod schema and Firestore persistence with `icon` field.
+  - `components/admin/admin-nav.tsx`: added "Banners" link with `Images` icon to both mobile drawer and desktop sidebar navigation.
+  - `types/index.ts`: added `Banner` interface, updated `Category` with `icon`, and exported `CATEGORY_ICON_KEYS`.
+  - `scripts/seed-data.ts`: added `SAMPLE_BANNERS` and mapped default category icons (`Zap`, `Cable`, `Headphones`, `BatteryCharging`, `Smartphone`, `ShieldCheck`, `Dock`, `HardDrive`).
+  - `next.config.mjs`: added `images.unsplash.com` to `remotePatterns`.
+- **Commands run**:
+  - `npx tsc --noEmit` -> PASS (0 errors)
+  - `npm run lint` -> PASS (0 warnings, 0 errors)
+  - `npm run build` -> PASS (all 36 routes compiled successfully)
+  - `curl -s http://localhost:3000` -> verified 200 OK, full-bleed hero slider, slim info strip, clean category row, and catalog
+- **Acceptance checks**:
+  - [x] Side space audit documented: `max-w-7xl` (1280px) and inner paddings caused excessive 160px+ margins on 1440px screens; replaced with full-bleed hero and `max-w-[1440px]` shared container (`px-4 md:px-6 lg:px-8`).
+  - [x] Category row redesigned without boxes, borders, or cards; icon in ash (hover `#2997ff`) with name below; horizontal swipe on mobile, centered row on desktop.
+  - [x] Lucide icons allowlist verified in node_modules: Holders & Stands mapped to `Dock`.
+  - [x] "Fresh Stock / New Arrivals" and "Featured Gear" removed from home page view while preserving data fields.
+  - [x] Hero slider fed from Firestore `banners`: autoplay ~5s, loop, pause on hover/focus/touch, swipe gestures, dots $\ge 44\text{px}$, desktop arrows, keyboard accessible. 1 banner disables controls/autoplay; 0 banners renders nothing.
+  - [x] Responsive art direction via `<picture>` + `getImageProps` ensures browsers download only matching mobile or desktop image.
+  - [x] Admin `/{ADMIN_PATH}/banners` page functional with upload, reorder, live preview, and CRUD.
+  - [x] Slim one-line info strip below hero with dynamic values from `StoreSettings`.
+  - [x] "Track order" link confirmed in navbar and footer.
+  - [x] PROJECT_SPEC.md, DECISIONS.md, and PROGRESS.md fully updated.
+- **Open items / TODO(verify)**:
+  - `TODO(verify)`: Real phone on local Wi-Fi test: With the dev server running on `0.0.0.0:3000`, open `http://<LOCAL_LAN_IP>:3000` on a physical smartphone to physically test swipe responsiveness across hero banners and category icons.
+
+
 
 

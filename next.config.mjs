@@ -13,6 +13,11 @@ const nextConfig = {
         hostname: "ibb.co",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
     ],
   },
 

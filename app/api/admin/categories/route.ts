@@ -14,6 +14,7 @@ const categorySchema = z.object({
   slug: z.string().min(2, "Category slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
   order: z.number().int().default(1),
   image: z.string().optional(),
+  icon: z.string().optional(),
 });
 
 export async function GET() {
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { id, name, slug, order, image } = parsed.data;
+    const { id, name, slug, order, image, icon } = parsed.data;
     const catId = id || `cat-${slug}`;
 
     const catData: Category = {
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
       slug,
       order,
       image,
+      icon: icon || undefined,
     };
 
     await adminDb.collection("categories").doc(catId).set(catData, { merge: true });

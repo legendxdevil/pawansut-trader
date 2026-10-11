@@ -45,12 +45,42 @@ export interface Product {
   updatedAt: number;
 }
 
+export const CATEGORY_ICON_KEYS = [
+  "Zap",
+  "PlugZap",
+  "Cable",
+  "Headphones",
+  "BatteryCharging",
+  "Smartphone",
+  "ShieldCheck",
+  "MemoryStick",
+  "HardDrive",
+  "Watch",
+  "Speaker",
+  "Dock",
+  "Package",
+] as const;
+
+export type CategoryIconKey = (typeof CATEGORY_ICON_KEYS)[number];
+
 export interface Category {
   id: string;
   name: string;
   slug: string;
   image?: string;
+  icon?: CategoryIconKey | string;
   order: number;
+}
+
+export interface Banner {
+  id: string;
+  imageUrl: string;
+  mobileImageUrl?: string;
+  alt: string;
+  link?: string;
+  isActive: boolean;
+  order: number;
+  createdAt: number;
 }
 
 export interface CustomerOrderDetails {

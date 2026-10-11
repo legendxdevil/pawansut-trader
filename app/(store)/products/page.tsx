@@ -23,7 +23,7 @@ export default async function ProductsPage({
   ]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 py-8 space-y-6">
       <div className="space-y-1">
         <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Accessories Catalog</h1>
         <p className="text-ash text-sm">

@@ -161,7 +161,7 @@ Subtle only: fade/slide-in on scroll (opacity + 12px translate), announcement sl
 **Admin** — lives under a **dynamic top-level segment**: `app/[adminPath]/...`.
 - The admin layout (server component) compares `params.adminPath` to `process.env.ADMIN_PATH`; mismatch → `notFound()`.
 - Static customer routes always win over the dynamic segment, so they are unaffected.
-- Admin pages: `login`, `dashboard`, `products`, `products/new`, `products/[id]`, `categories`, `orders`, `orders/[id]`, `orders/[id]/invoice`, `customers`, `coupons`, `announcements`, `reviews`, `analytics`, `settings`.
+- Admin pages: `login`, `dashboard`, `products`, `products/new`, `products/[id]`, `categories`, `banners`, `orders`, `orders/[id]`, `orders/[id]/invoice`, `customers`, `coupons`, `announcements`, `reviews`, `analytics`, `settings`.
 - Admin pages set `robots: { index: false, follow: false }` and the response header `X-Robots-Tag: noindex, nofollow`.
 
 **API (Route Handlers, Node runtime)** — see §11.
@@ -173,11 +173,13 @@ Subtle only: fade/slide-in on scroll (opacity + 12px translate), announcement sl
 ### 7.1 Announcement carousel (top of every customer page)
 - Source: Firestore `announcements` where `isActive == true`, ordered by `order`.
 - Auto-advance every 4 s with Framer Motion `AnimatePresence`; pause on hover/focus; prev/next arrows and dots when more than one; if none active, render nothing (no empty bar).
-- Text + optional link. Rendered server-side first (no flash), then hydrated.
+- Text + optional link. Rendered server-side first (no flash), then hydrated. Full-bleed 100% width.
 
 ### 7.2 Home
-- Hero (obsidian stage): headline, short subline, blue "Shop now" pill. Featured product image in a 28px frame if a featured product exists.
-- Category chips/tiles, "New arrivals", "Featured", then the product grid.
+- **Hero Slider (Moving Pictures)**: Full-bleed image slider (100% width, no side margins) fed from Firestore `banners` collection. Autoplay every ~5s, loop, pause on hover/focus/touch, swipe gestures on mobile, dots with $\ge 44\times 44\text{px}$ touch targets, desktop prev/next arrows, accessible keyboard controls. Respects `prefers-reduced-motion`. Art-directed responsive picture loading (downloads only mobile or desktop image depending on viewport). If 1 active banner: no controls/autoplay. If 0 active banners: renders nothing (no gap).
+- **Hero Info Strip**: Slim one-line strip directly below slider (no boxes): "Free delivery above Rs {settings.freeDeliveryAbove} (else Rs {settings.deliveryCharge})" and "Physical warranty card with warranty products", populated from `settings/store`.
+- **Browse by Category (Clean, No Boxes)**: Icons (~28-32px, `text-ash`, hover `text-electric-link`) with name below (12-14px, `text-porcelain`). No border, no background box, no card. Mobile: single horizontally scrollable row with scroll-snap and hidden scrollbars. Desktop: centered row. Links to `/category/[slug]`.
+- **All Mobile Accessories**: Single shared container (`max-w-[1440px] px-4 md:px-6 lg:px-8`) hosting the product grid with complete search, sort, and filter functionality. Note: "New Arrivals" and "Featured Gear" home sub-sections are removed from the page view to maintain a focused catalog layout.
 - Floating **WhatsApp chat button** (bottom-right, opens `wa.me/918505856763` with a greeting).
 
 ### 7.3 Catalog
@@ -279,7 +281,9 @@ All timestamps are Firestore `Timestamp` (or ms numbers if stated consistently i
 **`products/{id}`**
 `name, slug (unique), description, shortDescription?, images[] (Storage URLs), category (slug), tags[], price, mrp, specs[{label,value}], variants[{id,label,size?,color?,stock,priceOverride?}], warranty{enabled:boolean, months:number, note?:string}, isActive, isFeatured, isNew, ratingAvg, ratingCount, createdAt, updatedAt`
 
-**`categories/{id}`** `name, slug, image?, order`
+**`categories/{id}`** `name, slug, image?, icon?, order`
+
+**`banners/{id}`** `imageUrl, mobileImageUrl?, alt, link?, isActive, order, createdAt`
 
 **`orders/{id}`**
 `orderId, customer{name,phone,address,landmark?,city,pincode,email?}, items[{productId,variantId,name,variantLabel,price,qty,image,warranty{enabled,months}|null}], subtotal, discount, deliveryCharge, total, couponCode?, payment{method,status,gateway?,gatewayOrderId?,txnId?,paidAt?}, status, statusHistory[], warrantyCards[{number,productId,variantId,issuedAt}], warrantyCardIssued:boolean, createdAt, updatedAt`
@@ -313,7 +317,7 @@ All Route Handlers run on the **Node runtime** (`export const runtime = 'nodejs'
 | `POST /api/admin/session` | ID token | Verify token has `admin:true`, create session cookie |
 | `DELETE /api/admin/session` | admin | Logout |
 | `/api/admin/products` (+ `[id]`) | admin | CRUD, calls `revalidatePath` |
-| `/api/admin/categories`, `/announcements`, `/coupons`, `/settings` | admin | CRUD |
+| `/api/admin/categories`, `/banners` (+ `[id]`), `/announcements`, `/coupons`, `/settings` | admin | CRUD, calls `revalidatePath` |
 | `PATCH /api/admin/orders/[id]/status` | admin | Status transition with note |
 | `PATCH /api/admin/orders/[id]/warranty-card` | admin | Mark issued + generate card numbers |
 | `PATCH /api/admin/orders/[id]/payment` | admin | Mark COD paid / refunded |

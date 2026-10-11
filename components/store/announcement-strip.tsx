@@ -41,7 +41,7 @@ export function AnnouncementStrip({ initialAnnouncements = [] }: AnnouncementStr
 
   return (
     <div
-      className="bg-carbon text-porcelain text-xs sm:text-sm font-medium py-1.5 px-2 sm:px-4 relative z-20 select-none border-b border-steel/30"
+      className="w-full bg-carbon text-porcelain text-xs sm:text-sm font-medium py-1.5 relative z-20 select-none border-b border-steel/30"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
@@ -49,7 +49,7 @@ export function AnnouncementStrip({ initialAnnouncements = [] }: AnnouncementStr
       onTouchStart={() => setIsPaused(true)}
       onTouchEnd={() => setIsPaused(false)}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between min-h-[32px]">
+      <div className="max-w-[1440px] mx-auto flex items-center justify-between min-h-[32px] px-2 sm:px-4 md:px-6 lg:px-8">
         {announcements.length > 1 && (
           <button
             onClick={handlePrev}

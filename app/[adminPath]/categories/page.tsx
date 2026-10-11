@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import type { Category } from "@/types";
+import type { Category, CategoryIconKey } from "@/types";
+import { CATEGORY_ICON_KEYS } from "@/types";
+import { CategoryIcon } from "@/components/store/category-icon";
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -11,6 +13,7 @@ export default function AdminCategoriesPage() {
   // Form state
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [icon, setIcon] = useState<CategoryIconKey>("Zap");
   const [order, setOrder] = useState("1");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +63,7 @@ export default function AdminCategoriesPage() {
         body: JSON.stringify({
           name: name.trim(),
           slug: slug.trim().toLowerCase(),
+          icon,
           order: Number(order) || 1,
         }),
       });
@@ -71,6 +75,7 @@ export default function AdminCategoriesPage() {
         setSuccess(true);
         setName("");
         setSlug("");
+        setIcon("Zap");
         setOrder(String(categories.length + 2));
         fetchCategories();
       }
@@ -86,7 +91,7 @@ export default function AdminCategoriesPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-porcelain">Product Categories</h1>
         <p className="text-xs text-ash mt-0.5">
-          Organize accessory taxonomy and storefront navigation tabs.
+          Organize accessory taxonomy, storefront navigation icons, and category routing.
         </p>
       </div>
 
@@ -136,6 +141,42 @@ export default function AdminCategoriesPage() {
             />
           </div>
 
+          {/* Icon Picker with Live Preview */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-porcelain">Storefront Icon</label>
+              <div className="flex items-center gap-1.5 text-xs text-apple-blue">
+                <CategoryIcon iconName={icon} size={16} />
+                <span className="font-mono">{icon}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 bg-obsidian/60 p-2.5 rounded-2xl border border-steel/30 max-h-36 overflow-y-auto">
+              {CATEGORY_ICON_KEYS.map((key) => {
+                const isSelected = icon === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setIcon(key)}
+                    title={key}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all min-h-[44px] ${
+                      isSelected
+                        ? "bg-apple-blue text-white ring-2 ring-apple-blue/50"
+                        : "bg-carbon hover:bg-steel/30 text-ash hover:text-porcelain"
+                    }`}
+                  >
+                    <CategoryIcon iconName={key} size={20} />
+                    <span className="text-[10px] mt-1 truncate max-w-full">{key}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-ash">
+              Select a standard Lucide icon from the approved catalogue.
+            </p>
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-porcelain">Display Order</label>
             <input
@@ -179,8 +220,8 @@ export default function AdminCategoriesPage() {
               {categories.map((c) => (
                 <div key={c.id} className="p-4 flex items-center justify-between hover:bg-steel/10 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-steel/40 flex items-center justify-center text-porcelain font-bold text-xs">
-                      {c.order}
+                    <div className="w-9 h-9 rounded-full bg-steel/40 flex items-center justify-center text-electric-link shrink-0">
+                      <CategoryIcon iconName={c.icon} size={18} />
                     </div>
                     <div>
                       <p className="font-semibold text-porcelain text-sm">{c.name}</p>
@@ -188,9 +229,16 @@ export default function AdminCategoriesPage() {
                     </div>
                   </div>
 
-                  <span className="bg-graphite text-ash px-2.5 py-1 rounded-pill text-[11px] border border-steel/30">
-                    Order: {c.order}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {c.icon && (
+                      <span className="bg-steel/30 text-ash px-2 py-0.5 rounded-full text-[10px] font-mono">
+                        {c.icon}
+                      </span>
+                    )}
+                    <span className="bg-graphite text-ash px-2.5 py-1 rounded-pill text-[11px] border border-steel/30">
+                      Order: {c.order}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
