@@ -20,6 +20,7 @@ export async function getStoreSettings(): Promise<StoreSettings> {
       deliveryLocationName: STORE_CONFIG.hospitalName,
       supportEmail: STORE_CONFIG.supportEmail,
       address: STORE_CONFIG.shopAddress,
+      googleMapsEmbedUrl: STORE_CONFIG.googleMapsEmbedUrl,
     };
   }
 }

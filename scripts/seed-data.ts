@@ -73,7 +73,9 @@ export const SAMPLE_STORE_SETTINGS: StoreSettings = {
   restrictDeliveryToHospital: true,
   deliveryLocationName: "Satyawadi Raja Harish Chandra Hospital, Delhi",
   supportEmail: "support@pawansuttrader.com",
-  address: "Satyawadi Raja Harish Chandra Hospital Area, Narela, Delhi - 110040",
+  address: "GADGETS STORE, Near Satyawadi Raja Harish Chandra Hospital, Narela, Delhi - 110040",
+  googleMapsEmbedUrl:
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d111872.96372278818!2d77.02645966770928!3d28.808176384852715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390da9281515f1e3%3A0x262abccea91d7bcf!2sGADGETS%20STORE!5e0!3m2!1sen!2sin!4v1791719219792!5m2!1sen!2sin",
 };
 
 export const SAMPLE_COUPON: Coupon = {

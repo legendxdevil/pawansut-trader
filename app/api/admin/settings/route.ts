@@ -17,6 +17,7 @@ const settingsSchema = z.object({
   deliveryLocationName: z.string().min(2),
   supportEmail: z.string().email().optional().or(z.literal("")),
   address: z.string().optional().or(z.literal("")),
+  googleMapsEmbedUrl: z.string().optional().or(z.literal("")),
 });
 
 export async function GET() {
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
       ...parsed.data,
       supportEmail: parsed.data.supportEmail || undefined,
       address: parsed.data.address || undefined,
+      googleMapsEmbedUrl: parsed.data.googleMapsEmbedUrl || undefined,
     };
 
     await adminDb.collection("settings").doc("store").set(data, { merge: true });

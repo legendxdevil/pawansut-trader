@@ -194,6 +194,7 @@ export interface StoreSettings {
   storeName: string;
   supportEmail?: string;
   address?: string;
+  googleMapsEmbedUrl?: string;
 }
 
 export interface CartItem {

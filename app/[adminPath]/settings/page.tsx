@@ -207,6 +207,18 @@ export default function AdminSettingsPage() {
                 className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain p-3 rounded-tile border border-slate focus:border-apple-blue text-base sm:text-xs resize-none"
               />
             </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-medium text-ash">Google Maps Embed URL (iframe src)</label>
+              <input
+                type="url"
+                placeholder="https://www.google.com/maps/embed?..."
+                value={settings.googleMapsEmbedUrl || ""}
+                onChange={(e) => setSettings({ ...settings, googleMapsEmbedUrl: e.target.value })}
+                className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs font-mono"
+              />
+              <p className="text-[11px] text-ash">Google Maps Embed link used to show interactive map on customer contact page.</p>
+            </div>
           </div>
         </div>
 
