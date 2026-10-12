@@ -24,7 +24,6 @@ export default function CartPage() {
   } = useCart();
 
   const [couponCode, setCouponCode] = useState("");
-  const [couponNotice, setCouponNotice] = useState<string | null>(null);
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,9 +237,6 @@ export default function CartPage() {
                 Apply
               </button>
             </div>
-            {couponNotice && (
-              <p className="text-[11px] text-electric-link">{couponNotice}</p>
-            )}
           </form>
 
           {/* Price Breakdown */}

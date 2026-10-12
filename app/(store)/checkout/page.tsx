@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -21,9 +20,7 @@ import { checkoutFormSchema } from "@/lib/validation/checkout";
 import { calculateDeliveryCharge } from "@/lib/delivery";
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { hydratedItems, subtotal, deliveryCharge, isFreeDelivery, total, hasStockIssue, clearCart } =
-    useCart();
+  const { hydratedItems, subtotal, hasStockIssue, clearCart } = useCart();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -65,45 +62,48 @@ export default function CheckoutPage() {
   const effectiveIsFreeDelivery = deliveryResult.isFree;
   const effectiveTotal = Math.max(0, subtotal - discount) + effectiveDeliveryCharge;
 
-  const handleApplyCoupon = async (codeOverride?: string) => {
-    const code = (codeOverride || couponInput).trim().toUpperCase();
-    if (!code) {
-      setCouponError("Please enter a promo code");
-      return;
-    }
-    if (subtotal <= 0) {
-      setCouponError("Cart subtotal must be greater than zero");
-      return;
-    }
-
-    setIsValidatingCoupon(true);
-    setCouponError(null);
-    setCouponSuccess(null);
-
-    try {
-      const res = await fetch("/api/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, subtotal }),
-      });
-
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setCouponError(json.error?.message || "Invalid coupon code");
-        setAppliedCoupon(null);
-        setFormData((prev) => ({ ...prev, couponCode: "" }));
-      } else if (json.data) {
-        setAppliedCoupon(json.data);
-        setCouponInput(json.data.code);
-        setCouponSuccess(`Coupon "${json.data.code}" applied! Saved ₹${json.data.discount}`);
-        setFormData((prev) => ({ ...prev, couponCode: json.data.code }));
+  const handleApplyCoupon = useCallback(
+    async (codeOverride?: string) => {
+      const code = (codeOverride || couponInput).trim().toUpperCase();
+      if (!code) {
+        setCouponError("Please enter a promo code");
+        return;
       }
-    } catch {
-      setCouponError("Failed to validate coupon. Please check connection.");
-    } finally {
-      setIsValidatingCoupon(false);
-    }
-  };
+      if (subtotal <= 0) {
+        setCouponError("Cart subtotal must be greater than zero");
+        return;
+      }
+
+      setIsValidatingCoupon(true);
+      setCouponError(null);
+      setCouponSuccess(null);
+
+      try {
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, subtotal }),
+        });
+
+        const json = await res.json();
+        if (!res.ok || json.error) {
+          setCouponError(json.error?.message || "Invalid coupon code");
+          setAppliedCoupon(null);
+          setFormData((prev) => ({ ...prev, couponCode: "" }));
+        } else if (json.data) {
+          setAppliedCoupon(json.data);
+          setCouponInput(json.data.code);
+          setCouponSuccess(`Coupon "${json.data.code}" applied! Saved ₹${json.data.discount}`);
+          setFormData((prev) => ({ ...prev, couponCode: json.data.code }));
+        }
+      } catch {
+        setCouponError("Failed to validate coupon. Please check connection.");
+      } finally {
+        setIsValidatingCoupon(false);
+      }
+    },
+    [couponInput, subtotal]
+  );
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
@@ -125,7 +125,7 @@ export default function CheckoutPage() {
         }
       }
     }
-  }, [subtotal]);
+  }, [subtotal, handleApplyCoupon]);
 
   // Field refs for auto-focusing the first error field (§7.7)
   const nameRef = useRef<HTMLInputElement>(null);

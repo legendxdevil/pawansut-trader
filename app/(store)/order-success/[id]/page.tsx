@@ -1,7 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { CheckCircle2, MessageCircle, ShieldCheck, ArrowRight, Package, Home } from "lucide-react";
 import { adminDb } from "@/lib/firebase-admin";
 import type { Order } from "@/types";
