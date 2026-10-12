@@ -9,8 +9,8 @@ export const runtime = "nodejs";
 
 const bannerSchema = z.object({
   id: z.string().optional(),
-  imageUrl: z.string().url("Valid image URL is required"),
-  mobileImageUrl: z.string().url("Valid mobile image URL").optional().or(z.literal("")),
+  imageUrl: z.string().min(1, "Banner image is required"),
+  mobileImageUrl: z.string().optional().or(z.literal("")),
   alt: z.string().min(1, "Alt text is required"),
   link: z.string().optional().or(z.literal("")),
   isActive: z.boolean().default(true),
@@ -59,12 +59,12 @@ export async function POST(req: Request) {
     const bannerData: Banner = {
       id: bannerId,
       imageUrl,
-      mobileImageUrl: mobileImageUrl || undefined,
       alt,
-      link: link || undefined,
       isActive,
       order,
       createdAt: Date.now(),
+      ...(mobileImageUrl ? { mobileImageUrl } : {}),
+      ...(link ? { link } : {}),
     };
 
     await adminDb.collection("banners").doc(bannerId).set(bannerData, { merge: true });

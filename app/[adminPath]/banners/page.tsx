@@ -20,6 +20,60 @@ import {
 } from "lucide-react";
 import type { Banner } from "@/types";
 
+async function compressImage(file: File, maxDim = 1920): Promise<File> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const compressed = new File(
+            [blob],
+            file.name.replace(/\.[^/.]+$/, "") + ".webp",
+            { type: "image/webp", lastModified: Date.now() }
+          );
+          resolve(compressed);
+        },
+        "image/webp",
+        0.85
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,10 +86,13 @@ export default function AdminBannersPage() {
   const [link, setLink] = useState("");
   const [order, setOrder] = useState("1");
   const [isActive, setIsActive] = useState(true);
+  const [showManualDesktopUrl, setShowManualDesktopUrl] = useState(false);
+  const [showManualMobileUrl, setShowManualMobileUrl] = useState(false);
 
   // Upload state
   const [uploadingDesktop, setUploadingDesktop] = useState(false);
   const [uploadingMobile, setUploadingMobile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const desktopFileInputRef = useRef<HTMLInputElement>(null);
   const mobileFileInputRef = useRef<HTMLInputElement>(null);
@@ -75,10 +132,14 @@ export default function AdminBannersPage() {
       setUploadingMobile(true);
     }
     setUploadError(null);
+    setUploadProgress(`Compressing ${file.name}...`);
 
     try {
+      const compressed = await compressImage(file, isDesk ? 1920 : 1080);
+      setUploadProgress(`Uploading ${file.name}...`);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("image", compressed);
 
       const res = await fetch("/api/admin/upload-image", {
         method: "POST",
@@ -97,9 +158,12 @@ export default function AdminBannersPage() {
         } else {
           setMobileImageUrl(uploadedUrl);
         }
+        setUploadProgress("Image uploaded successfully!");
+        setTimeout(() => setUploadProgress(null), 3000);
       }
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : "Upload failed");
+      setUploadProgress(null);
     } finally {
       if (isDesk) {
         setUploadingDesktop(false);
@@ -134,6 +198,8 @@ export default function AdminBannersPage() {
     setLink("");
     setOrder(String(banners.length + 1));
     setIsActive(true);
+    setShowManualDesktopUrl(false);
+    setShowManualMobileUrl(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -143,22 +209,18 @@ export default function AdminBannersPage() {
     setSuccess(null);
 
     if (!imageUrl.trim()) {
-      setError("Desktop banner image URL is required");
+      setError("Please upload or select a desktop banner image");
       setSaving(false);
       return;
     }
 
-    if (!alt.trim()) {
-      setError("Alt text is required for accessibility");
-      setSaving(false);
-      return;
-    }
+    const bannerAlt = alt.trim() || `Hero Banner ${order}`;
 
     try {
       const payload = {
         imageUrl: imageUrl.trim(),
         mobileImageUrl: mobileImageUrl.trim() || undefined,
-        alt: alt.trim(),
+        alt: bannerAlt,
         link: link.trim() || undefined,
         isActive,
         order: Number(order) || 1,
@@ -292,106 +354,267 @@ export default function AdminBannersPage() {
           )}
 
           <form onSubmit={handleSave} className="space-y-4">
-            {/* Desktop Image */}
-            <div className="space-y-1.5">
+            {/* Desktop Banner Image Upload */}
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-porcelain">
-                  Desktop Image URL *
+                <label className="text-xs font-semibold text-porcelain flex items-center gap-1.5">
+                  <Monitor size={14} className="text-apple-blue" />
+                  <span>Desktop Banner Image *</span>
                 </label>
                 <span className="text-[11px] text-ash font-mono">1920x720 recommended</span>
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="https://... (1920x720)"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  required
-                  className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs placeholder:text-ash"
-                />
-                <input
-                  ref={desktopFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
+
+              {/* Hidden file input */}
+              <input
+                ref={desktopFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/jpg"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileUpload(f, "desktop");
+                }}
+              />
+
+              {imageUrl ? (
+                /* Uploaded Preview Card */
+                <div className="relative rounded-tile overflow-hidden border border-steel/40 bg-obsidian group">
+                  <img
+                    src={imageUrl}
+                    alt="Desktop preview"
+                    className="w-full aspect-[8/3] object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-obsidian/90 via-obsidian/30 to-transparent flex items-end justify-between p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-success/20 text-success border border-success/30 backdrop-blur-sm">
+                      <CheckCircle2 size={11} /> Image Ready
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => desktopFileInputRef.current?.click()}
+                        disabled={uploadingDesktop}
+                        className="px-2.5 py-1.5 rounded-pill bg-steel/80 hover:bg-steel text-white text-[11px] font-medium flex items-center gap-1 backdrop-blur-sm transition-colors"
+                      >
+                        {uploadingDesktop ? (
+                          <Loader2 size={12} className="animate-spin text-apple-blue" />
+                        ) : (
+                          <Upload size={12} />
+                        )}
+                        <span>Replace</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl("")}
+                        className="p-1.5 rounded-pill bg-error/20 hover:bg-error/30 text-error backdrop-blur-sm transition-colors"
+                        title="Remove banner"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Empty Upload Dropzone */
+                <div
+                  onClick={() => !uploadingDesktop && desktopFileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const f = e.dataTransfer.files?.[0];
                     if (f) handleFileUpload(f, "desktop");
                   }}
-                />
+                  className={`border-2 border-dashed rounded-tile p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+                    uploadingDesktop
+                      ? "border-apple-blue/50 bg-apple-blue/5 cursor-wait"
+                      : "border-steel/40 hover:border-apple-blue hover:bg-steel/10 bg-obsidian/40"
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-apple-blue/15 text-apple-blue flex items-center justify-center">
+                    {uploadingDesktop ? (
+                      <Loader2 size={22} className="animate-spin" />
+                    ) : (
+                      <Upload size={22} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-porcelain">
+                      {uploadingDesktop
+                        ? uploadProgress || "Uploading Desktop Banner..."
+                        : "Tap to select Desktop Banner from device"}
+                    </p>
+                    <p className="text-[11px] text-ash mt-0.5">
+                      Auto-compressed for instant loading • JPG, PNG, WebP
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Collapsed Direct URL Option */}
+              <div className="pt-1">
                 <button
                   type="button"
-                  disabled={uploadingDesktop}
-                  onClick={() => desktopFileInputRef.current?.click()}
-                  className="bg-steel/40 hover:bg-steel/70 text-porcelain px-3 py-2.5 rounded-pill text-xs flex items-center gap-1.5 min-h-[44px] shrink-0"
+                  onClick={() => setShowManualDesktopUrl(!showManualDesktopUrl)}
+                  className="text-[11px] text-ash hover:text-apple-blue transition-colors flex items-center gap-1"
                 >
-                  {uploadingDesktop ? (
-                    <Loader2 size={14} className="animate-spin text-apple-blue" />
-                  ) : (
-                    <Upload size={14} />
-                  )}
-                  <span>Upload</span>
+                  <LinkIcon size={11} />
+                  <span>
+                    {showManualDesktopUrl
+                      ? "Hide link paste box"
+                      : "Or paste direct image URL instead"}
+                  </span>
                 </button>
+
+                {showManualDesktopUrl && (
+                  <div className="mt-1.5 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="https://... or /uploads/..."
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs placeholder:text-ash font-mono"
+                    />
+                  </div>
+                )}
               </div>
-              <p className="text-[11px] text-ash">
-                Shown on screens ≥ 768px. Upload via ImgBB or enter direct image URL.
-              </p>
             </div>
 
-            {/* Mobile Image */}
-            <div className="space-y-1.5">
+            {/* Mobile Banner Image Upload (Optional) */}
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-porcelain">
-                  Mobile Image URL (Optional)
+                <label className="text-xs font-semibold text-porcelain flex items-center gap-1.5">
+                  <Smartphone size={14} className="text-copper-new" />
+                  <span>Mobile Banner (Optional)</span>
                 </label>
                 <span className="text-[11px] text-ash font-mono">1080x1080 or 4:3</span>
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="https://... (1080x1080 or 4:3)"
-                  value={mobileImageUrl}
-                  onChange={(e) => setMobileImageUrl(e.target.value)}
-                  className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs placeholder:text-ash"
-                />
-                <input
-                  ref={mobileFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
+
+              {/* Hidden file input */}
+              <input
+                ref={mobileFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/jpg"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileUpload(f, "mobile");
+                }}
+              />
+
+              {mobileImageUrl ? (
+                /* Uploaded Preview Card */
+                <div className="relative rounded-tile overflow-hidden border border-steel/40 bg-obsidian group max-w-[280px]">
+                  <img
+                    src={mobileImageUrl}
+                    alt="Mobile preview"
+                    className="w-full aspect-[4/3] object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-obsidian/90 via-obsidian/30 to-transparent flex items-end justify-between p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-success/20 text-success border border-success/30 backdrop-blur-sm">
+                      <CheckCircle2 size={11} /> Ready
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => mobileFileInputRef.current?.click()}
+                        disabled={uploadingMobile}
+                        className="px-2.5 py-1.5 rounded-pill bg-steel/80 hover:bg-steel text-white text-[11px] font-medium flex items-center gap-1 backdrop-blur-sm transition-colors"
+                      >
+                        {uploadingMobile ? (
+                          <Loader2 size={12} className="animate-spin text-apple-blue" />
+                        ) : (
+                          <Upload size={12} />
+                        )}
+                        <span>Replace</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMobileImageUrl("")}
+                        className="p-1.5 rounded-pill bg-error/20 hover:bg-error/30 text-error backdrop-blur-sm transition-colors"
+                        title="Remove mobile banner"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Empty Upload Dropzone */
+                <div
+                  onClick={() => !uploadingMobile && mobileFileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const f = e.dataTransfer.files?.[0];
                     if (f) handleFileUpload(f, "mobile");
                   }}
-                />
+                  className={`border-2 border-dashed rounded-tile p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 ${
+                    uploadingMobile
+                      ? "border-apple-blue/50 bg-apple-blue/5 cursor-wait"
+                      : "border-steel/40 hover:border-apple-blue hover:bg-steel/10 bg-obsidian/40"
+                  }`}
+                >
+                  <div className="w-9 h-9 rounded-full bg-copper-new/15 text-copper-new flex items-center justify-center">
+                    {uploadingMobile ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Smartphone size={18} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-porcelain">
+                      {uploadingMobile
+                        ? uploadProgress || "Uploading Mobile Banner..."
+                        : "Tap to select Mobile Banner (Optional)"}
+                    </p>
+                    <p className="text-[11px] text-ash">
+                      If left blank, desktop banner is used on phones automatically
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Collapsed Direct URL Option */}
+              <div className="pt-1">
                 <button
                   type="button"
-                  disabled={uploadingMobile}
-                  onClick={() => mobileFileInputRef.current?.click()}
-                  className="bg-steel/40 hover:bg-steel/70 text-porcelain px-3 py-2.5 rounded-pill text-xs flex items-center gap-1.5 min-h-[44px] shrink-0"
+                  onClick={() => setShowManualMobileUrl(!showManualMobileUrl)}
+                  className="text-[11px] text-ash hover:text-apple-blue transition-colors flex items-center gap-1"
                 >
-                  {uploadingMobile ? (
-                    <Loader2 size={14} className="animate-spin text-apple-blue" />
-                  ) : (
-                    <Upload size={14} />
-                  )}
-                  <span>Upload</span>
+                  <LinkIcon size={11} />
+                  <span>
+                    {showManualMobileUrl
+                      ? "Hide mobile link paste box"
+                      : "Or paste direct mobile image URL"}
+                  </span>
                 </button>
+
+                {showManualMobileUrl && (
+                  <div className="mt-1.5 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="https://... or /uploads/..."
+                      value={mobileImageUrl}
+                      onChange={(e) => setMobileImageUrl(e.target.value)}
+                      className="flex-1 bg-[rgba(255,255,255,0.04)] text-porcelain px-3 py-2 rounded-pill border border-slate focus:border-apple-blue text-xs placeholder:text-ash font-mono"
+                    />
+                  </div>
+                )}
               </div>
-              <p className="text-[11px] text-ash">
-                Shown on screens under 768px. If blank, desktop image is used on mobile.
-              </p>
             </div>
 
             {/* Alt text */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-porcelain">Alt Description *</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-porcelain">
+                  Banner Title / Description
+                </label>
+                <span className="text-[11px] text-ash">Optional</span>
+              </div>
               <input
                 type="text"
-                placeholder="e.g. Ultra-Fast 65W GaN Chargers Collection"
+                placeholder="e.g. Exclusive Deals & Offers"
                 value={alt}
                 onChange={(e) => setAlt(e.target.value)}
-                required
                 className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-base sm:text-xs placeholder:text-ash"
               />
             </div>

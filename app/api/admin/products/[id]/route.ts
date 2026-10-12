@@ -39,6 +39,43 @@ export async function PATCH(
 
     const currentData = existing.data() as Product;
     const now = Date.now();
+
+    // Sanitize slug if provided
+    if (updates.slug) {
+      updates.slug = String(updates.slug)
+        .toLowerCase()
+        .trim()
+        .replace(/[\s_+]+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    // Sanitize prices
+    if (updates.price !== undefined) {
+      updates.price = Math.max(0, Number(updates.price) || 0);
+    }
+    if (updates.mrp !== undefined) {
+      const basePrice = updates.price !== undefined ? updates.price : currentData.price;
+      updates.mrp = Math.max(basePrice, Number(updates.mrp) || basePrice);
+    }
+
+    // Sanitize variants
+    if (Array.isArray(updates.variants)) {
+      updates.variants = updates.variants.map((v: unknown, idx: number) => {
+        const item = typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {};
+        const pOverride = item.priceOverride ? Number(item.priceOverride) : undefined;
+        return {
+          id: String(item.id || `var-${idx + 1}-${Date.now().toString(36)}`),
+          label: String(item.label || "").trim() || `Option ${idx + 1}`,
+          size: item.size ? String(item.size) : undefined,
+          color: item.color ? String(item.color) : undefined,
+          stock: Math.max(0, Number(item.stock) || 0),
+          ...(pOverride && pOverride > 0 ? { priceOverride: pOverride } : {}),
+        };
+      });
+    }
+
     const updatedPayload = {
       ...updates,
       updatedAt: now,
@@ -49,8 +86,10 @@ export async function PATCH(
     // Revalidate affected paths per spec §11 & §19
     revalidatePath("/");
     revalidatePath("/products");
-    if (currentData.category) revalidatePath(`/category/${currentData.category}`);
+    const targetCategory = updates.category || currentData.category;
+    if (targetCategory) revalidatePath(`/category/${targetCategory}`);
     if (currentData.slug) revalidatePath(`/products/${currentData.slug}`);
+    if (updates.slug && updates.slug !== currentData.slug) revalidatePath(`/products/${updates.slug}`);
 
     return NextResponse.json({ data: { ...currentData, ...updatedPayload, id: params.id } });
   } catch (err: unknown) {

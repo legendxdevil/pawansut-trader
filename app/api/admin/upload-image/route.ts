@@ -72,9 +72,12 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.IMGBB_API_KEY?.trim();
     if (apiKey) {
       try {
-        const blob = new Blob([fileBuffer], { type: file.type || "image/webp" });
+        const base64Data = fileBuffer.toString("base64");
         const imgbbFormData = new FormData();
-        imgbbFormData.append("image", blob, file.name || "product-image.webp");
+        imgbbFormData.append("image", base64Data);
+        if (file.name) {
+          imgbbFormData.append("name", file.name.replace(/\.[^/.]+$/, ""));
+        }
 
         const imgbbUrl = `https://api.imgbb.com/1/upload?key=${encodeURIComponent(apiKey)}`;
         const imgbbResponse = await fetch(imgbbUrl, {
@@ -91,6 +94,8 @@ export async function POST(req: NextRequest) {
             thumbUrl: data.thumb?.url || data.display_url || data.url,
             deleteUrl: data.delete_url,
           });
+        } else {
+          console.warn("ImgBB API returned non-success response:", result);
         }
       } catch (err) {
         console.warn("ImgBB upload failed, seamlessly falling back to local storage:", err);

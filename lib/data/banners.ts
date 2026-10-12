@@ -7,33 +7,32 @@ import type { Banner } from "@/types";
  */
 export async function getActiveBanners(): Promise<Banner[]> {
   try {
-    const snap = await adminDb
-      .collection("banners")
-      .where("isActive", "==", true)
-      .orderBy("order", "asc")
-      .get();
+    const snap = await adminDb.collection("banners").get();
 
     if (!snap.empty) {
-      return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
+      const banners = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
+      return banners
+        .filter((b) => b.isActive !== false)
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
     }
     return [];
-  } catch {
+  } catch (err) {
+    console.error("Error in getActiveBanners:", err);
     return [];
   }
 }
 
 export async function getAllBanners(): Promise<Banner[]> {
   try {
-    const snap = await adminDb
-      .collection("banners")
-      .orderBy("order", "asc")
-      .get();
+    const snap = await adminDb.collection("banners").get();
 
     if (!snap.empty) {
-      return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
+      const banners = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Banner));
+      return banners.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
     }
     return [];
-  } catch {
+  } catch (err) {
+    console.error("Error in getAllBanners:", err);
     return [];
   }
 }

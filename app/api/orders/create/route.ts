@@ -204,24 +204,38 @@ export async function POST(req: Request) {
 
     // Step 7: Order Document Construction
     const orderDocRef = adminDb.collection("orders").doc();
+    const customerObj: {
+      name: string;
+      phone: string;
+      address: string;
+      city: string;
+      pincode: string;
+      landmark?: string;
+      email?: string;
+    } = {
+      name: data.fullName,
+      phone: data.mobile,
+      address: data.address,
+      city: data.city || "Delhi",
+      pincode: data.pincode,
+    };
+    if (data.landmark && data.landmark.trim()) {
+      customerObj.landmark = data.landmark.trim();
+    }
+    if (data.email && data.email.trim()) {
+      customerObj.email = data.email.trim();
+    }
+
     const orderData: Order = {
       id: orderDocRef.id,
       orderId: orderIdFormatted,
-      customer: {
-        name: data.fullName,
-        phone: data.mobile,
-        address: data.address,
-        landmark: data.landmark || undefined,
-        city: data.city || "Delhi",
-        pincode: data.pincode,
-        email: data.email || undefined,
-      },
+      customer: customerObj,
       items: orderItems,
       subtotal,
       discount,
       deliveryCharge: delivery.charge,
       total,
-      couponCode: validCouponCode,
+      ...(validCouponCode ? { couponCode: validCouponCode } : {}),
       payment: {
         method: data.paymentMode,
         status: "pending",
@@ -241,71 +255,67 @@ export async function POST(req: Request) {
       updatedAt: now,
     };
 
-    // Save order, update stock, increment coupon, upsert customer (§8.2)
-    try {
-      await adminDb.collection("orders").doc(orderDocRef.id).set(orderData);
+    // Save order to Firestore (Mandatory)
+    await adminDb.collection("orders").doc(orderDocRef.id).set(orderData);
 
-      // Decrement stock for each variant
-      for (const item of orderItems) {
-        try {
-          const prodRef = adminDb.collection("products").doc(item.productId);
-          const pSnap = await prodRef.get();
-          if (pSnap.exists) {
-            const pData = pSnap.data();
-            const updatedVariants = (pData?.variants || []).map((v: { id: string; stock: number; [key: string]: unknown }) => {
-              if (v.id === item.variantId) {
-                return { ...v, stock: Math.max(0, v.stock - item.qty) };
-              }
-              return v;
-            });
-            await prodRef.update({ variants: updatedVariants, updatedAt: now });
-          }
-        } catch {
-          // If Firestore is offline, local state updated
-        }
-      }
-
-      // Increment coupon usedCount if applicable
-      if (validCouponCode) {
-        try {
-          const cRef = adminDb.collection("coupons").doc(validCouponCode);
-          const cSnap = await cRef.get();
-          if (cSnap.exists) {
-            await cRef.update({ usedCount: (cSnap.data()?.usedCount || 0) + 1 });
-          }
-        } catch {
-          // Ignore
-        }
-      }
-
-      // Upsert customer record
+    // Decrement stock for each variant (Auxiliary)
+    for (const item of orderItems) {
       try {
-        const custRef = adminDb.collection("customers").doc(data.mobile);
-        const custSnap = await custRef.get();
-        if (custSnap.exists) {
-          const cData = custSnap.data() as CustomerRecord;
-          await custRef.update({
-            name: data.fullName,
-            lastAddress: `${data.address}, ${data.city} - ${data.pincode}`,
-            ordersCount: (cData.ordersCount || 0) + 1,
-            totalSpent: (cData.totalSpent || 0) + total,
-            lastOrderAt: now,
+        const prodRef = adminDb.collection("products").doc(item.productId);
+        const pSnap = await prodRef.get();
+        if (pSnap.exists) {
+          const pData = pSnap.data();
+          const updatedVariants = (pData?.variants || []).map((v: { id: string; stock: number; [key: string]: unknown }) => {
+            if (v.id === item.variantId) {
+              return { ...v, stock: Math.max(0, v.stock - item.qty) };
+            }
+            return v;
           });
-        } else {
-          await custRef.set({
-            phone: data.mobile,
-            name: data.fullName,
-            lastAddress: `${data.address}, ${data.city} - ${data.pincode}`,
-            ordersCount: 1,
-            totalSpent: total,
-            lastOrderAt: now,
-          });
+          await prodRef.update({ variants: updatedVariants, updatedAt: now });
         }
-      } catch {
-        // Ignore
+      } catch (stockErr) {
+        console.warn("[POST /api/orders/create] Stock update warning:", stockErr);
       }
-    } catch (e) {
-      console.warn("Firestore write skipped in offline mode:", e);
+    }
+
+    // Increment coupon usedCount if applicable (Auxiliary)
+    if (validCouponCode) {
+      try {
+        const cRef = adminDb.collection("coupons").doc(validCouponCode);
+        const cSnap = await cRef.get();
+        if (cSnap.exists) {
+          await cRef.update({ usedCount: (cSnap.data()?.usedCount || 0) + 1 });
+        }
+      } catch (couponErr) {
+        console.warn("[POST /api/orders/create] Coupon update warning:", couponErr);
+      }
+    }
+
+    // Upsert customer record (Auxiliary)
+    try {
+      const custRef = adminDb.collection("customers").doc(data.mobile);
+      const custSnap = await custRef.get();
+      if (custSnap.exists) {
+        const cData = custSnap.data() as CustomerRecord;
+        await custRef.update({
+          name: data.fullName,
+          lastAddress: `${data.address}, ${data.city} - ${data.pincode}`,
+          ordersCount: (cData.ordersCount || 0) + 1,
+          totalSpent: (cData.totalSpent || 0) + total,
+          lastOrderAt: now,
+        });
+      } else {
+        await custRef.set({
+          phone: data.mobile,
+          name: data.fullName,
+          lastAddress: `${data.address}, ${data.city} - ${data.pincode}`,
+          ordersCount: 1,
+          totalSpent: total,
+          lastOrderAt: now,
+        });
+      }
+    } catch (custErr) {
+      console.warn("[POST /api/orders/create] Customer upsert warning:", custErr);
     }
 
     return NextResponse.json({

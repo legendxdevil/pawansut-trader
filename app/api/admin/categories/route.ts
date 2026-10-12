@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       slug,
       order,
       image,
-      icon: icon || undefined,
+      ...(icon ? { icon } : {}),
     };
 
     await adminDb.collection("categories").doc(catId).set(catData, { merge: true });

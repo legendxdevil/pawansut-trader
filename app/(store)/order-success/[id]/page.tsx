@@ -24,6 +24,16 @@ export default async function OrderSuccessPage({ params }: OrderSuccessPageProps
     const doc = await adminDb.collection("orders").doc(params.id).get();
     if (doc.exists) {
       order = { id: doc.id, ...doc.data() } as Order;
+    } else {
+      // Also query by orderId (e.g. PT-000001)
+      const qSnap = await adminDb
+        .collection("orders")
+        .where("orderId", "==", params.id.toUpperCase())
+        .limit(1)
+        .get();
+      if (!qSnap.empty) {
+        order = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() } as Order;
+      }
     }
   } catch {
     // If offline or test doc
@@ -56,7 +66,39 @@ export default async function OrderSuccessPage({ params }: OrderSuccessPageProps
         updatedAt: Date.now(),
       };
     } else {
-      notFound();
+      return (
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
+          <div className="w-16 h-16 rounded-full bg-apple-blue/10 border border-apple-blue/30 text-apple-blue flex items-center justify-center mx-auto">
+            <Package size={32} />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-porcelain">Order Lookup</h1>
+            <p className="text-xs text-ash max-w-md mx-auto">
+              We couldn&apos;t load the details for order reference{" "}
+              <span className="font-mono text-porcelain font-semibold">{params.id}</span> right now.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/track"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-pill bg-apple-blue text-white text-xs font-semibold hover:bg-apple-blue/90"
+            >
+              Track with Phone Number
+            </Link>
+            <a
+              href={`https://wa.me/91${STORE_CONFIG.whatsappNumber}?text=${encodeURIComponent(
+                `Hello Pawansut Trader, I placed an order (${params.id}) and want to confirm it.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-pill bg-[#25D366] text-white text-xs font-semibold hover:bg-[#20bd5a] flex items-center justify-center gap-2"
+            >
+              <MessageCircle size={14} />
+              <span>Confirm on WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      );
     }
   }
 

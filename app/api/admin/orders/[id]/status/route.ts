@@ -72,12 +72,20 @@ export async function PATCH(
     }
 
     const now = Date.now();
-    const newHistoryEntry = {
+    const newHistoryEntry: {
+      status: OrderStatus;
+      at: number;
+      by: "admin";
+      note?: string;
+    } = {
       status: nextStatus as OrderStatus,
       at: now,
-      by: "admin" as const,
-      note: note ? note.trim() : undefined,
+      by: "admin",
     };
+
+    if (note && note.trim()) {
+      newHistoryEntry.note = note.trim();
+    }
 
     const updatedHistory = [...(order.statusHistory || []), newHistoryEntry];
     const updates: Partial<Order> = {

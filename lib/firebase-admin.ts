@@ -43,4 +43,12 @@ function initFirebaseAdmin(): App {
 
 export const adminApp: App = initFirebaseAdmin();
 export const adminDb: Firestore = getFirestore(adminApp);
+
+try {
+  adminDb.settings({ ignoreUndefinedProperties: true });
+} catch {
+  // Ignore if settings have already been locked
+}
+
 export const adminAuth: Auth = getAuth(adminApp);
+

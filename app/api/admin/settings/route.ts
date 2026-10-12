@@ -46,9 +46,9 @@ export async function POST(req: Request) {
 
     const data: StoreSettings = {
       ...parsed.data,
-      supportEmail: parsed.data.supportEmail || undefined,
-      address: parsed.data.address || undefined,
-      googleMapsEmbedUrl: parsed.data.googleMapsEmbedUrl || undefined,
+      ...(parsed.data.supportEmail ? { supportEmail: parsed.data.supportEmail } : {}),
+      ...(parsed.data.address ? { address: parsed.data.address } : {}),
+      ...(parsed.data.googleMapsEmbedUrl ? { googleMapsEmbedUrl: parsed.data.googleMapsEmbedUrl } : {}),
     };
 
     await adminDb.collection("settings").doc("store").set(data, { merge: true });

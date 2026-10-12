@@ -54,9 +54,9 @@ export async function POST(req: Request) {
     const data: Announcement = {
       id: docId,
       text,
-      link: link || undefined,
       isActive,
       order,
+      ...(link ? { link } : {}),
     };
 
     await adminDb.collection("announcements").doc(docId).set(data, { merge: true });

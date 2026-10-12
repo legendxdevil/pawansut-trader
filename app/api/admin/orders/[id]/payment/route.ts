@@ -37,11 +37,18 @@ export async function PATCH(
     const order = orderSnap.data() as Order;
     const now = Date.now();
 
-    const updatedPayment = {
+    const updatedPayment: typeof order.payment = {
       ...order.payment,
       status,
-      paidAt: status === "paid" ? now : order.payment.paidAt,
     };
+
+    if (status === "paid") {
+      updatedPayment.paidAt = now;
+    } else if (order.payment.paidAt) {
+      updatedPayment.paidAt = order.payment.paidAt;
+    } else {
+      delete updatedPayment.paidAt;
+    }
 
     await orderRef.update({
       payment: updatedPayment,

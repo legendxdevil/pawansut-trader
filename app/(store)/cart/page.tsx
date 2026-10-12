@@ -2,11 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, AlertTriangle, Truck, Tag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { STORE_CONFIG } from "@/lib/store-config";
 
 export default function CartPage() {
+  const router = useRouter();
   const {
     hydratedItems,
     isLoading,
@@ -27,8 +29,7 @@ export default function CartPage() {
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponCode.trim()) return;
-    // Coupon validation will be verified against /api/coupons/validate in Phase 4
-    setCouponNotice("Coupon will be applied and validated during checkout.");
+    router.push(`/checkout?coupon=${encodeURIComponent(couponCode.trim())}`);
   };
 
   if (isLoading && hydratedItems.length === 0) {
@@ -262,7 +263,13 @@ export default function CartPage() {
 
           {/* Checkout CTA */}
           <Link
-            href={hasStockIssue ? "#" : "/checkout"}
+            href={
+              hasStockIssue
+                ? "#"
+                : couponCode.trim()
+                ? `/checkout?coupon=${encodeURIComponent(couponCode.trim())}`
+                : "/checkout"
+            }
             onClick={(e) => {
               if (hasStockIssue) e.preventDefault();
             }}
@@ -289,7 +296,13 @@ export default function CartPage() {
           <span className="text-base font-bold text-porcelain">₹{total}</span>
         </div>
         <Link
-          href={hasStockIssue ? "#" : "/checkout"}
+          href={
+            hasStockIssue
+              ? "#"
+              : couponCode.trim()
+              ? `/checkout?coupon=${encodeURIComponent(couponCode.trim())}`
+              : "/checkout"
+          }
           onClick={(e) => {
             if (hasStockIssue) e.preventDefault();
           }}

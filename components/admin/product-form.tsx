@@ -154,19 +154,32 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [slugTouched, setSlugTouched] = useState(isEditing);
 
   // Auto-slugify on name change if not manually touched
   const handleNameChange = (val: string) => {
     setName(val);
-    if (!isEditing && !slug) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "")
-      );
+    if (!slugTouched && !isEditing) {
+      const autoSlug = val
+        .toLowerCase()
+        .trim()
+        .replace(/[\s_+]+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-");
+      setSlug(autoSlug);
     }
   };
+
+  const handleSlugChange = (val: string) => {
+    setSlugTouched(true);
+    const cleaned = val
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-");
+    setSlug(cleaned);
+  };
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -289,37 +302,56 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
     setError(null);
     setSuccess(false);
 
-    const priceNum = Number(price);
-    const mrpNum = Number(mrp) || priceNum;
+    const priceNum = Math.max(0, Number(price) || 0);
+    const mrpNum = Math.max(priceNum, Number(mrp) || priceNum);
 
-    if (mrpNum < priceNum) {
-      setError("MRP must be greater than or equal to the selling price.");
-      setLoading(false);
-      return;
+    // Auto-derive slug if empty
+    let finalSlug = slug.trim().toLowerCase().replace(/^-+|-+$/g, "");
+    if (!finalSlug) {
+      finalSlug = name
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_+]+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
     }
+    if (!finalSlug) {
+      finalSlug = `product-${Date.now().toString(36).slice(-4)}`;
+    }
+
+    const finalDescription =
+      description.trim() ||
+      shortDescription.trim() ||
+      name.trim() ||
+      "Genuine premium mobile accessory from Pawansut Trader.";
 
     const payload = {
       name: name.trim(),
-      slug: slug.trim().toLowerCase(),
-      category,
+      slug: finalSlug,
+      category: category || "chargers-adapters",
       price: priceNum,
       mrp: mrpNum,
       shortDescription: shortDescription.trim() || undefined,
-      description: description.trim(),
+      description: finalDescription,
       images: images.filter(Boolean),
       tags: tags
         .split(",")
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean),
-      variants: variants.map((v) => ({
-        ...v,
-        stock: Number(v.stock) || 0,
-        priceOverride: v.priceOverride ? Number(v.priceOverride) : undefined,
-      })),
+      variants: variants.map((v, idx) => {
+        const po = v.priceOverride ? Number(v.priceOverride) : undefined;
+        return {
+          id: v.id || `var-${idx + 1}-${Date.now().toString(36)}`,
+          label: (v.label || "").trim() || `Option ${idx + 1}`,
+          stock: Math.max(0, Number(v.stock) || 0),
+          ...(po && po > 0 ? { priceOverride: po } : {}),
+        };
+      }),
       specs: specs.filter((s) => s.label.trim() && s.value.trim()),
       warranty: {
         enabled: warrantyEnabled,
-        months: warrantyEnabled ? Number(warrantyMonths) || 0 : 0,
+        months: warrantyEnabled ? Math.max(0, Number(warrantyMonths) || 0) : 0,
         note: warrantyNote.trim() || undefined,
       },
       isActive,
@@ -342,13 +374,19 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
       const json = await res.json();
 
       if (!res.ok || json.error) {
-        setError(json.error?.message || "Failed to save product.");
+        const errMsg = json.error?.message || "Failed to save product.";
+        const fieldDetails = json.error?.fields
+          ? Object.entries(json.error.fields)
+              .map(([f, msgs]) => `${f}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`)
+              .join(" | ")
+          : "";
+        setError(fieldDetails ? `${errMsg} (${fieldDetails})` : errMsg);
       } else {
         setSuccess(true);
         setTimeout(() => {
           router.push(`/${adminPath}/products`);
           router.refresh();
-        }, 1000);
+        }, 800);
       }
     } catch {
       setError("Network or server error while saving product.");
@@ -424,17 +462,29 @@ export function ProductForm({ initialProduct, categories, adminPath }: ProductFo
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-porcelain">
-              Slug (URL identifier) <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-porcelain">
+                Slug (URL identifier) <span className="text-red-500">*</span>
+              </label>
+              {!slugTouched && !isEditing && (
+                <span className="text-[10px] text-apple-blue font-medium">Auto-derived from name</span>
+              )}
+            </div>
             <input
               type="text"
-              placeholder="65w-gan-dual-port-charger"
+              placeholder="e.g. 65w-gan-dual-port-charger"
               value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase())}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              onBlur={() => {
+                const cleaned = slug.replace(/^-+|-+$/g, "");
+                setSlug(cleaned);
+              }}
               required
               className="w-full bg-[rgba(255,255,255,0.04)] text-porcelain px-4 py-2.5 rounded-pill border border-slate focus:border-apple-blue text-sm font-mono"
             />
+            <p className="text-[10px] text-ash">
+              Store URL: <span className="text-porcelain font-mono">/products/{slug || "..."}</span>
+            </p>
           </div>
 
           <div className="space-y-1.5">

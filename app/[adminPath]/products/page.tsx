@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Plus, ShieldCheck, Edit, ExternalLink } from "lucide-react";
+import { Plus, ShieldCheck, Edit, ExternalLink, PackageOpen } from "lucide-react";
 import { getProducts } from "@/lib/data/products";
 
 interface AdminProductsProps {
@@ -8,7 +8,7 @@ interface AdminProductsProps {
 }
 
 export default async function AdminProductsPage({ params }: AdminProductsProps) {
-  const products = await getProducts();
+  const products = await getProducts({ includeInactive: true });
 
   return (
     <div className="space-y-6">
@@ -22,15 +22,37 @@ export default async function AdminProductsPage({ params }: AdminProductsProps) 
 
         <Link
           href={`/${params.adminPath}/products/new`}
-          className="bg-apple-blue hover:bg-apple-blue/90 text-white text-xs font-semibold px-4 py-2.5 rounded-pill flex items-center gap-1.5 transition-transform active:scale-95"
+          className="bg-apple-blue hover:bg-apple-blue/90 text-white text-xs font-semibold px-4 py-2.5 rounded-pill flex items-center gap-1.5 transition-transform active:scale-95 shadow-sm"
         >
           <Plus size={16} />
           <span>Add Product</span>
         </Link>
       </div>
 
-      {/* Container: Mobile Cards (< md) + Desktop Table (md+) */}
-      <div className="bg-carbon rounded-tile border border-steel/30 overflow-hidden">
+      {products.length === 0 ? (
+        <div className="bg-carbon rounded-tile border border-steel/20 p-12 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-apple-blue/10 border border-apple-blue/20 flex items-center justify-center mx-auto text-apple-blue">
+            <PackageOpen size={32} />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-porcelain">No products in Firestore yet</h2>
+            <p className="text-xs text-ash max-w-sm mx-auto">
+              Your catalog is currently empty. Add your first phone charger, cable, audio gear, or tempered glass.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              href={`/${params.adminPath}/products/new`}
+              className="inline-flex items-center gap-2 bg-apple-blue hover:bg-apple-blue/90 text-white text-xs font-semibold px-6 py-2.5 rounded-pill transition-transform active:scale-95"
+            >
+              <Plus size={14} />
+              <span>Add Your First Product</span>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        /* Container: Mobile Cards (< md) + Desktop Table (md+) */
+        <div className="bg-carbon rounded-tile border border-steel/30 overflow-hidden">
         {/* Mobile Cards (< md) */}
         <div className="md:hidden divide-y divide-steel/20">
           {products.map((p) => {
@@ -256,6 +278,7 @@ export default async function AdminProductsPage({ params }: AdminProductsProps) 
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 }

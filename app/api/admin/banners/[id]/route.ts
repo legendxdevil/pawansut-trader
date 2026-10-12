@@ -7,8 +7,8 @@ import { adminDb } from "@/lib/firebase-admin";
 export const runtime = "nodejs";
 
 const patchBannerSchema = z.object({
-  imageUrl: z.string().url("Valid image URL is required").optional(),
-  mobileImageUrl: z.string().url("Valid mobile image URL").optional().or(z.literal("")),
+  imageUrl: z.string().min(1, "Valid image path is required").optional(),
+  mobileImageUrl: z.string().optional().or(z.literal("")),
   alt: z.string().min(1, "Alt text is required").optional(),
   link: z.string().optional().or(z.literal("")),
   isActive: z.boolean().optional(),

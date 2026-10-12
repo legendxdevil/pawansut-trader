@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import Image, { getImageProps } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Banner } from "@/types";
@@ -11,62 +10,27 @@ interface HeroSliderProps {
   banners: Banner[];
 }
 
-const ALLOWED_OPTIMIZED_HOSTS = ["i.ibb.co", "ibb.co", "images.unsplash.com"];
-
-function isOptimizable(src: string): boolean {
-  try {
-    if (src.startsWith("/")) return true;
-    const url = new URL(src);
-    return ALLOWED_OPTIMIZED_HOSTS.some(
-      (h) => url.hostname === h || url.hostname.endsWith("." + h)
-    );
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Slide Image renderer supporting responsive art direction:
  * On mobile (< 768px), downloads only mobileImageUrl if present.
  * On desktop (>= 768px), downloads only imageUrl.
+ * Uses high-performance native HTML5 picture and img elements to support
+ * both local /uploads/ and remote CDN URLs seamlessly without optimizer 400 errors.
  */
 function SlideImage({ banner, isFirst }: { banner: Banner; isFirst: boolean }) {
   if (banner.mobileImageUrl) {
-    const isMobileOpt = isOptimizable(banner.mobileImageUrl);
-    const isDeskOpt = isOptimizable(banner.imageUrl);
-
-    const { props: mobileProps } = getImageProps({
-      src: banner.mobileImageUrl,
-      alt: banner.alt,
-      width: 1080,
-      height: 1080,
-      sizes: "100vw",
-      priority: isFirst,
-      unoptimized: !isMobileOpt,
-    });
-
-    const { props: desktopProps } = getImageProps({
-      src: banner.imageUrl,
-      alt: banner.alt,
-      width: 1920,
-      height: 720,
-      sizes: "100vw",
-      priority: isFirst,
-      unoptimized: !isDeskOpt,
-    });
-
     return (
       <picture className="w-full h-full block">
         <source
           media="(max-width: 767px)"
-          srcSet={mobileProps.srcSet || mobileProps.src}
+          srcSet={banner.mobileImageUrl}
         />
         <source
           media="(min-width: 768px)"
-          srcSet={desktopProps.srcSet || desktopProps.src}
+          srcSet={banner.imageUrl}
         />
         <img
-          src={desktopProps.src}
+          src={banner.imageUrl}
           alt={banner.alt}
           loading={isFirst ? "eager" : "lazy"}
           decoding="async"
@@ -77,14 +41,12 @@ function SlideImage({ banner, isFirst }: { banner: Banner; isFirst: boolean }) {
   }
 
   return (
-    <Image
+    <img
       src={banner.imageUrl}
       alt={banner.alt}
-      fill
-      priority={isFirst}
-      sizes="100vw"
-      unoptimized={!isOptimizable(banner.imageUrl)}
-      className="object-cover select-none pointer-events-none"
+      loading={isFirst ? "eager" : "lazy"}
+      decoding="async"
+      className="w-full h-full object-cover select-none pointer-events-none"
     />
   );
 }

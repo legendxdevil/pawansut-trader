@@ -11,9 +11,14 @@ export async function getProducts(options?: {
   search?: string;
   sort?: "newest" | "price-asc" | "price-desc" | "name";
   limit?: number;
+  includeInactive?: boolean;
 }): Promise<Product[]> {
   try {
-    let query: FirebaseFirestore.Query = adminDb.collection("products").where("isActive", "==", true);
+    let query: FirebaseFirestore.Query = adminDb.collection("products");
+
+    if (!options?.includeInactive) {
+      query = query.where("isActive", "==", true);
+    }
 
     if (options?.category && options.category !== "all") {
       query = query.where("category", "==", options.category);
