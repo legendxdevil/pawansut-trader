@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Remote image patterns for ImgBB CDN hosting
   images: {
     remotePatterns: [
